@@ -1,0 +1,29 @@
+from telebot.types import KeyboardButton, ReplyKeyboardMarkup
+
+from config import BUTTONS
+
+
+def name_to_cmd(names):
+    return ['/' + name for name in names]
+
+
+def make_base_kbd(buttons_name, row_width=3):
+    keyboard = ReplyKeyboardMarkup(row_width=row_width, resize_keyboard=True)
+    buttons = [KeyboardButton(name) for name in buttons_name]
+    return keyboard.add(*buttons)
+
+
+def make_welcome_kbd(*args, **kwargs):
+    row_width = 2
+    buttons_name = name_to_cmd(
+        [BUTTONS['make_advert'],
+         BUTTONS['help'], ]
+        )
+    return make_base_kbd(buttons_name, row_width)
+
+
+def cancel_this_kbd(*args, **kwargs):
+    buttons_name = name_to_cmd([
+         BUTTONS['cancel_this']
+        ])
+    return make_base_kbd(buttons_name)
