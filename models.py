@@ -6,6 +6,7 @@ from typing import List
 import buttons as sb
 
 from config import ADV_MESSAGE
+from utils import adv_sender
 
 
 class RegistrProces:
@@ -17,7 +18,7 @@ class RegistrProces:
         self.is_active = True
         self.errors = {}
         self._fix_list = []
-        self.adv_sender = None  # TODO
+        self.adv_sender = adv_sender
         self.adv_blank = {
             'space': None,
             'flour': None,
@@ -125,14 +126,11 @@ class RegistrProces:
 
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
-        # res = self.adv_sender(self.adv_blank)
-        # self.is_active = False
-        # text = ADV_MESSAGE['adv_confirm']
+        text = adv_sender(self.adv_blank)['text']
         # # keyboard = sb.adv_update_button(self)
-        # return self.mess_wrapper([
-        #     [text],
-        #     [EMOJI['bicyclist'], sb.make_welcome_kbd()],
-        #     ])
+        return self.mess_wrapper([
+            [text, sb.make_welcome_kbd()],
+            ])
 
     def mess_wrapper(self, value) -> List[dict]:
         keyboard = None

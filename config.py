@@ -30,3 +30,7 @@ ADV_MESSAGE = {
     'not_integer': 'Ожидался ввод целого числа',
     'step_is_required': 'Этот шаг нельзя пропустить',
 }
+
+MESS_TEMPLATES = {
+    'adv_line': '{}: {}\n'
+}
