@@ -64,7 +64,8 @@ def welcome(message):
     user = get_user(message)
     if user.is_stack_empty():
         mess = MESSAGES['welcome']
-        bot.send_message(user.id, mess, reply_markup=sb.make_welcome_kbd())
+        # bot.send_message(user.id, mess, reply_markup=sb.make_welcome_kbd())
+        bot.send_message(user.id, mess)
 
 
 @bot.message_handler(commands=['подсказка', 'help'])
@@ -80,7 +81,7 @@ def text_router(message):
     try_exec_stack(message, user, data)
 
 
-@bot.callback_query_handler()
+@bot.callback_query_handler(func=True)
 def inline_keys_exec(call):
     message = call.message
     user = get_user(message)

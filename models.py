@@ -31,7 +31,7 @@ class RegistrProces:
         self.adv_blank_id = None
 
     _stop_text = 'to registration'
-    _finish_step = 7
+    _finish_step = 8
     _prior_messages = {
         1: [{'text': ADV_MESSAGE['mess_ask_space'],
             'kbd_maker': sb.cancel_this_kbd}],
@@ -42,16 +42,19 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
+        8: [{'text': _stop_text}],
+
     }
 
     _step_actions = {
         1: {'name': 'space', 'required': True},
         2: {'name': 'flour', 'required': True},
         3: {'name': 'material', 'required': True},
-        4: {'name': 'address', 'required': False},
+        4: {'name': 'address', 'required': True},
         5: {'name': 'year', 'required': True},
-        6: {'name': 'district', 'required': False},
-        7: {'name': 'price', 'required': False},
+        6: {'name': 'district', 'required': True},
+        7: {'name': 'price', 'required': True},
+        8: {'name': 'registration', 'required': True},
     }
 
     def _get_action(self, step: int) -> dict:
@@ -79,9 +82,6 @@ class RegistrProces:
         to_hash = data.encode()
         hs = hashlib.md5(to_hash).digest()
         return base64.urlsafe_b64encode(hs).decode('ascii').replace('=', '')
-
-    def _age_check(self):
-        pass
 
     def is_act_required(self):
         act = self._get_action(self.step)
@@ -128,6 +128,7 @@ class RegistrProces:
         self.adv_blank_id = self._make_id_for_regblank()
         text = adv_sender(self.adv_blank)['text']
         # # keyboard = sb.adv_update_button(self)
+        self.is_active = False
         return self.mess_wrapper([
             [text, sb.make_welcome_kbd()],
             ])
@@ -170,6 +171,10 @@ class RegistrProces:
         except Exception:
             data = None
             message = ADV_MESSAGE['not_integer']
+        return {'data': data, 'error': message}
+
+    def _age_check(self, data: str):
+        message = None
         return {'data': data, 'error': message}
 
 

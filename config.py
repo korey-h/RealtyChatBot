@@ -1,6 +1,7 @@
 BUTTONS = {
     'make_advert': 'Создать объявление',
-    'btn_reg_update': 'Подсказка',
+    'help': 'Подсказка',
+    'cancel_this': 'Прекратить',
 }
 
 MESSAGES = {
