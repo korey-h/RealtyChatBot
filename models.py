@@ -5,8 +5,9 @@ from typing import List
 
 import buttons as sb
 
+from bot import adv_sender
 from config import ADV_MESSAGE
-from utils import adv_sender
+from utils import adv_former
 
 
 class RegistrProces:
@@ -28,10 +29,11 @@ class RegistrProces:
             'district': '',
             'price': None
         }
+        self.adv_f_send = '-'
         self.adv_blank_id = None
 
     _stop_text = 'to registration'
-    _finish_step = 8
+    _finish_step = 9
     _prior_messages = {
         1: [{'text': ADV_MESSAGE['mess_ask_space'],
             'kbd_maker': sb.cancel_this_kbd}],
@@ -42,7 +44,9 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': _stop_text}],
+        8: [{'text': ADV_MESSAGE['mess_confirm_adv']},
+            {'text': adv_former, 'kbd_maker': sb.send_btn}],
+        9: [{'text': _stop_text}],
 
     }
 
@@ -52,9 +56,10 @@ class RegistrProces:
         3: {'name': 'material', 'required': True},
         4: {'name': 'address', 'required': True},
         5: {'name': 'year', 'required': True},
-        6: {'name': 'district', 'required': True},
+        6: {'name': 'district', 'required': False},
         7: {'name': 'price', 'required': True},
-        8: {'name': 'registration', 'required': True},
+        8: {'name': 'confirmation', 'required': True},
+        9: {'name': 'registration', 'required': True},
     }
 
     def _get_action(self, step: int) -> dict:
@@ -126,7 +131,8 @@ class RegistrProces:
 
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
-        text = adv_sender(self.adv_blank)['text']
+        text = ADV_MESSAGE['mess_adv_send']
+        self.adv_sender(self.adv_f_send)
         # # keyboard = sb.adv_update_button(self)
         self.is_active = False
         return self.mess_wrapper([
@@ -138,6 +144,7 @@ class RegistrProces:
         text = None
         if isinstance(value, str):
             text = value
+
         elif isinstance(value, int):
             pre_mess = []
             datas = self._prior_messages[value]
@@ -148,7 +155,13 @@ class RegistrProces:
                 maker = data.get('kbd_maker')
                 keyboard = maker(self) if maker else None
                 pre_mess.append({'text': text, 'reply_markup': keyboard})
+            if not self._step_actions[value]['required']:
+                pre_mess.append({
+                    'text': ADV_MESSAGE['pass_step'],
+                    'reply_markup': sb.pass_keyboard()
+                    }) 
             return pre_mess
+
         elif isinstance(value, (list, tuple)):
             pre_mess = []
             for data in value:
@@ -156,6 +169,7 @@ class RegistrProces:
                 keyboard = data[1]
                 pre_mess.append({'text': text, 'reply_markup': keyboard})
             return pre_mess
+
         elif isinstance(value, dict):
             return [value]
         return [{'text': text, 'reply_markup': keyboard}]

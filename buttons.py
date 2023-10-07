@@ -1,4 +1,7 @@
-from telebot.types import KeyboardButton, ReplyKeyboardMarkup
+import json
+
+from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup)
 
 from config import BUTTONS
 
@@ -27,3 +30,19 @@ def cancel_this_kbd(*args, **kwargs):
          BUTTONS['cancel_this']
         ])
     return make_base_kbd(buttons_name)
+
+
+def pass_keyboard(*args, **kwargs):
+    pass_button = InlineKeyboardButton(
+        text=BUTTONS['pass'],
+        callback_data=json.dumps(
+            {'name': 'pass', 'payload': None}))
+    return InlineKeyboardMarkup().add(pass_button)
+
+
+def send_btn(*args, **kwargs):
+    pass_button = InlineKeyboardButton(
+        text=BUTTONS['send_adv'],
+        callback_data=json.dumps(
+            {'name': 'send', 'payload': 'send'}))
+    return InlineKeyboardMarkup().add(pass_button)

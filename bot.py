@@ -59,13 +59,21 @@ def send_multymessage(user_id, pre_mess: list):
         bot.send_message(user_id, **mess_data)
 
 
+def adv_sender(mess, chat_id = my_chat_id, message_tread_id = my_thread_id):
+    pre_mess = [{
+        'text': mess,
+        'message_tread_id': message_tread_id
+    }]
+    send_multymessage(chat_id, pre_mess)
+
+
 @bot.message_handler(commands=['start'])
 def welcome(message):
     user = get_user(message)
     if user.is_stack_empty():
         mess = MESSAGES['welcome']
-        # bot.send_message(user.id, mess, reply_markup=sb.make_welcome_kbd())
-        bot.send_message(user.id, mess)
+        bot.send_message(user.id, mess, reply_markup=sb.make_welcome_kbd())
+        # bot.send_message(user.id, mess)
 
 
 @bot.message_handler(commands=['подсказка', 'help'])
