@@ -5,7 +5,6 @@ from typing import List
 
 import buttons as sb
 
-from bot import adv_sender
 from config import ADV_MESSAGE
 from utils import adv_former
 
@@ -19,7 +18,7 @@ class RegistrProces:
         self.is_active = True
         self.errors = {}
         self._fix_list = []
-        self.adv_sender = adv_sender
+
         self.adv_blank = {
             'space': None,
             'flour': None,
@@ -131,12 +130,10 @@ class RegistrProces:
 
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
-        text = ADV_MESSAGE['mess_adv_send']
-        self.adv_sender(self.adv_f_send)
-        # # keyboard = sb.adv_update_button(self)
+        # keyboard = sb.adv_update_button(self)
         self.is_active = False
         return self.mess_wrapper([
-            [text, sb.make_welcome_kbd()],
+            [ADV_MESSAGE['mess_adv_send'], sb.make_welcome_kbd()],
             ])
 
     def mess_wrapper(self, value) -> List[dict]:

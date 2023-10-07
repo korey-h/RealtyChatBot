@@ -10,7 +10,7 @@ from telebot import TeleBot
 
 import buttons as sb
 
-from config import EMOJI, MESSAGES
+from config import BUTTONS, EMOJI, MESSAGES
 from models import User
 
 if os.path.exists('.env'):
@@ -73,13 +73,49 @@ def welcome(message):
     if user.is_stack_empty():
         mess = MESSAGES['welcome']
         bot.send_message(user.id, mess, reply_markup=sb.make_welcome_kbd())
-        # bot.send_message(user.id, mess)
 
 
-@bot.message_handler(commands=['подсказка', 'help'])
+@bot.message_handler(commands=[BUTTONS['help'], 'help'])
 def about(message):
     user = get_user(message)
     bot.send_message(user.id, ABOUT)
+
+
+@bot.message_handler(commands=[BUTTONS['make_advert']], )
+def registration(message, user: User = None, data=None, *args, **kwargs):
+    '''Оформление объявления'''
+
+    self_name = 'advert_forming'
+    user = user if user else get_user(message)
+    called_from = kwargs.get('from')
+
+    if not user.adv_proces:
+        user.start_advert()
+        user.set_cmd_stack((self_name, registration))
+        if called_from and called_from == 'force_start':
+            user.adv_proces.step += 1
+    elif not called_from:
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['adv_always_on']
+            )
+
+    if isinstance(data, dict):
+        # if not is_buttons_alowwed(self_name, data, user):
+        #     return
+        data = data['payload'] if 'payload' in data.keys() else data
+    crnt_step = user.adv_proces.step
+    if (data is None and crnt_step > 0 and
+            crnt_step < user.adv_proces._finish_step):
+        context = user.adv_proces.pass_step()
+    else:
+        context = user.adv_proces.exec(data)
+    if not user.adv_proces.is_active:
+        mess = user.adv_proces.adv_f_send
+        adv_sender(mess)
+        user.stop_advert()
+        user.cmd_stack_pop()
+    send_multymessage(user.id, context)
 
 
 @bot.message_handler(content_types=["text"])
