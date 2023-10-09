@@ -10,7 +10,7 @@ from telebot import TeleBot
 
 import buttons as sb
 
-from config import BUTTONS, EMOJI, MESSAGES
+from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User
 
 if os.path.exists('.env'):
@@ -59,12 +59,22 @@ def send_multymessage(user_id, pre_mess: list):
         bot.send_message(user_id, **mess_data)
 
 
-def adv_sender(mess, chat_id = my_chat_id, message_tread_id = my_thread_id):
+def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
     pre_mess = [{
         'text': mess,
-        'message_tread_id': message_tread_id
+        'message_thread_id': message_thread_id
     }]
     send_multymessage(chat_id, pre_mess)
+
+
+def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
+    btn_name = button_data.get('name')
+    allowed = ALLOWED_BUTTONS.get(func_name)
+    if not btn_name or allowed is None or btn_name not in allowed:
+        text = MESSAGES['not_allowed_btn']
+        bot.send_message(user.id, text=text)
+        return False
+    return True
 
 
 @bot.message_handler(commands=['start'])
@@ -79,6 +89,30 @@ def welcome(message):
 def about(message):
     user = get_user(message)
     bot.send_message(user.id, ABOUT)
+
+
+@bot.message_handler(commands=[BUTTONS['cancel_this']])
+def cancel_this(message):
+    user = get_user(message)
+    up_stack = user.cmd_stack_pop()
+    if not up_stack or not up_stack['cmd_name']:
+        return
+    cmd = up_stack['cmd']
+    if cmd == registration:
+        user.stop_advert()
+    all_comm = [cmd.__doc__, ]
+    while up_stack:
+        cmd = up_stack['cmd']
+        prev = user.get_cmd_stack()
+        if not prev or cmd != prev['called_by']:
+            break
+        user.cmd_stack_pop()
+        all_comm.append(prev['cmd'].__doc__)
+    out = ', '.join(all_comm)
+    bot.send_message(
+        user.id,
+        MESSAGES['mess_cancel_this'].format(out),
+        reply_markup=sb.make_welcome_kbd())
 
 
 @bot.message_handler(commands=[BUTTONS['make_advert']], )
@@ -101,8 +135,8 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
             )
 
     if isinstance(data, dict):
-        # if not is_buttons_alowwed(self_name, data, user):
-        #     return
+        if not is_buttons_alowwed(self_name, data, user):
+            return
         data = data['payload'] if 'payload' in data.keys() else data
     crnt_step = user.adv_proces.step
     if (data is None and crnt_step > 0 and
@@ -130,7 +164,7 @@ def inline_keys_exec(call):
     message = call.message
     user = get_user(message)
     data = json.loads(call.data)
-    pass
+    try_exec_stack(message, user, data)
 
 
 ##################################################################

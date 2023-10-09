@@ -238,8 +238,6 @@ class User:
 
     def cmd_stack_pop(self):
         if len(self._commands) > 0:
-            if self.adv_proces:
-                self.stop_registration()
             return self._commands.pop()
         return None
 
