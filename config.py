@@ -38,7 +38,8 @@ ADV_MESSAGE = {
     'step_is_required': 'Этот шаг нельзя пропустить',
     'pass_step': 'Этот шаг можно пропустить.',
     'mess_confirm_adv': 'Прошу подтвердить объявление:\n ',
-    'mess_adv_send': 'Объявление отправлено!'
+    'mess_adv_send': 'Объявление отправлено!',
+    'wrong_year': 'Год постройки не может быть позже текущего года!',
     }
 
 MESS_TEMPLATES = {
@@ -57,5 +58,5 @@ ADV_BLANK_WORDS = {
 
 
 ALLOWED_BUTTONS = {
-    'advert_forming': ['send_adv', 'pass']    
+    'advert_forming': ['send', 'pass']    
 }

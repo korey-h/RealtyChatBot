@@ -1,4 +1,5 @@
 import base64
+import datetime as dt
 import hashlib
 
 from typing import List
@@ -50,7 +51,7 @@ class RegistrProces:
     }
 
     _step_actions = {
-        1: {'name': 'space', 'required': True},
+        1: {'name': 'space', 'required': False},
         2: {'name': 'flour', 'required': True},
         3: {'name': 'material', 'required': True},
         4: {'name': 'address', 'required': True},
@@ -186,6 +187,11 @@ class RegistrProces:
 
     def _age_check(self, data: str):
         message = None
+        self._to_integer(data)
+        year = int(data)
+        year_now = dt.datetime.now().year
+        if year > year_now:
+            message = ADV_MESSAGE['wrong_year']
         return {'data': data, 'error': message}
 
 

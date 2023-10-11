@@ -159,7 +159,7 @@ def text_router(message):
     try_exec_stack(message, user, data)
 
 
-@bot.callback_query_handler(func=True)
+@bot.callback_query_handler(func=lambda call: True)
 def inline_keys_exec(call):
     message = call.message
     user = get_user(message)
