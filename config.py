@@ -33,6 +33,7 @@ ADV_MESSAGE = {
                          'a0fa23aaf2c49add9e667cbfc015bf8&source='
                          'constructorLink))',
     'mess_ask_price': 'Укажите цену в рублях.',
+    'mess_ask_photo': 'Вы можете добавить фотографии.',
     'adv_confirm': 'Объявление отправлено.',
     'not_integer': 'Ожидался ввод целого числа',
     'step_is_required': 'Этот шаг нельзя пропустить',
@@ -53,10 +54,19 @@ ADV_BLANK_WORDS = {
     'address': 'Адрес',
     'year': 'Год постройки',
     'district': 'Район',
-    'price': 'Цена, руб.'    
+    'price': 'Цена, руб.',
+    'photo': 'Фотографии',  
 }
 
 
 ALLOWED_BUTTONS = {
     'advert_forming': ['send', 'pass']    
+}
+
+KEYWORDS = {
+    'send_btn': 'send'
+}
+
+KEYWORDS_MESS = {
+    'button': 'Ожидаю нажатие кнопки.',
 }

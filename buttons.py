@@ -3,7 +3,7 @@ import json
 from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 
-from config import BUTTONS
+from config import BUTTONS, KEYWORDS
 
 
 def name_to_cmd(names):
@@ -44,5 +44,5 @@ def send_btn(*args, **kwargs):
     pass_button = InlineKeyboardButton(
         text=BUTTONS['send_adv'],
         callback_data=json.dumps(
-            {'name': 'send', 'payload': 'send'}))
+            {'name': 'send', 'payload': KEYWORDS['send_btn']}))
     return InlineKeyboardMarkup().add(pass_button)

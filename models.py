@@ -6,7 +6,7 @@ from typing import List
 
 import buttons as sb
 
-from config import ADV_MESSAGE
+from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
 from utils import adv_former
 
 
@@ -16,9 +16,10 @@ class RegistrProces:
         self.step = 0
         self.race = None
         self.id = None
+        self._finish_step = len(self._step_actions)
         self.is_active = True
         self.errors = {}
-        self._fix_list = []
+        self._fix_list = [] # сохраняет номер шага и текст ошибки
 
         self.adv_blank = {
             'space': None,
@@ -27,13 +28,14 @@ class RegistrProces:
             'address': '',
             'year': None,
             'district': '',
-            'price': None
+            'price': None,
+            'photo': None,
         }
         self.adv_f_send = '-'
         self.adv_blank_id = None
 
     _stop_text = 'to registration'
-    _finish_step = 9
+    # _finish_step = 10
     _prior_messages = {
         1: [{'text': ADV_MESSAGE['mess_ask_space'],
             'kbd_maker': sb.cancel_this_kbd}],
@@ -44,22 +46,28 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': ADV_MESSAGE['mess_confirm_adv']},
+        8: [{'text': ADV_MESSAGE['mess_ask_photo']}],
+        9: [{'text': ADV_MESSAGE['mess_confirm_adv']},
             {'text': adv_former, 'kbd_maker': sb.send_btn}],
-        9: [{'text': _stop_text}],
+        10: [{'text': _stop_text}],
 
     }
 
     _step_actions = {
-        1: {'name': 'space', 'required': False},
+        1: {'name': 'space', 'required': True},
         2: {'name': 'flour', 'required': True},
         3: {'name': 'material', 'required': True},
         4: {'name': 'address', 'required': True},
         5: {'name': 'year', 'required': True},
         6: {'name': 'district', 'required': False},
         7: {'name': 'price', 'required': True},
-        8: {'name': 'confirmation', 'required': True},
-        9: {'name': 'registration', 'required': True},
+        8: {'name': 'photo', 'required': False},
+        9: {'name': 'confirmation', 'required': True},
+        10: {'name': 'registration', 'required': True},
+    }
+
+    _step_keywords = {
+        9: {'keyword': KEYWORDS['send_btn'], 'source': 'button'}
     }
 
     def _get_action(self, step: int) -> dict:
@@ -79,6 +87,7 @@ class RegistrProces:
             5: self._age_check,
             6: self._clipper,
             7: self._to_integer,
+            9: self._check_keyword,
         }
         return validators.get(step)
 
@@ -192,6 +201,15 @@ class RegistrProces:
         year_now = dt.datetime.now().year
         if year > year_now:
             message = ADV_MESSAGE['wrong_year']
+        return {'data': data, 'error': message}
+    
+    def _check_keyword(self, data: str):
+        message = None
+        keyword = self._step_keywords.get(self.step)
+        if keyword:
+            if data != keyword['keyword']:
+                source = keyword['source']
+                message = KEYWORDS_MESS[source]
         return {'data': data, 'error': message}
 
 

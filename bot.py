@@ -23,6 +23,17 @@ LET_VIEW_EXS = True
 my_chat_id = os.getenv('CHAT_ID')
 my_thread_id = os.getenv('MESSAGE_THREAD_ID')
 bot = TeleBot(os.getenv('TOKEN'))
+SEND_METHODS= {
+        'audio': bot.send_audio,
+        'photo': bot.send_photo,
+        'voice': bot.send_voice,
+        'video': bot.send_video,
+        'document': bot.send_document,
+        'text': bot.send_message,
+        'location': bot.send_location,
+        'contact': bot.send_contact,
+        'sticker': bot.send_sticker,
+        }
 users = {}
 
 logger = logging.getLogger(__name__)
@@ -56,7 +67,9 @@ def try_exec_stack(message, user: User, data):
 
 def send_multymessage(user_id, pre_mess: list):
     for mess_data in pre_mess:
-        bot.send_message(user_id, **mess_data)
+        mess_type = mess_data.get('mess_type') or 'text' # проверить, что тип есть в SEND_METHODS 
+        sender = SEND_METHODS[mess_type]
+        sender(user_id, **mess_data)
 
 
 def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
@@ -115,7 +128,7 @@ def cancel_this(message):
         reply_markup=sb.make_welcome_kbd())
 
 
-@bot.message_handler(commands=[BUTTONS['make_advert']], )
+@bot.message_handler(commands=[BUTTONS['make_advert'], 'create'], )
 def registration(message, user: User = None, data=None, *args, **kwargs):
     '''Оформление объявления'''
 
@@ -152,11 +165,20 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
     send_multymessage(user.id, context)
 
 
-@bot.message_handler(content_types=["text"])
+@bot.message_handler(content_types=['text'])
 def text_router(message):
     user = get_user(message)
     data = message.text
     try_exec_stack(message, user, data)
+
+
+@bot.message_handler(content_types=['photo', ])
+def media_router(message):
+    user = get_user(message)
+    photo = message.photo[-1].file_id # выбрать самое большое
+    caption = message.caption
+    bot.send_photo(user.id, photo=photo, caption=caption) #пробная отправка
+    try_exec_stack(message, user, photo)
 
 
 @bot.callback_query_handler(func=lambda call: True)
