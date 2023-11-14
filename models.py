@@ -29,13 +29,12 @@ class RegistrProces:
             'year': None,
             'district': '',
             'price': None,
-            'photo': None,
+            'photo': [],
         }
         self.adv_f_send = '-'
         self.adv_blank_id = None
 
     _stop_text = 'to registration'
-    # _finish_step = 10
     _prior_messages = {
         1: [{'text': ADV_MESSAGE['mess_ask_space'],
             'kbd_maker': sb.cancel_this_kbd}],
@@ -46,7 +45,7 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': ADV_MESSAGE['mess_ask_photo']}],
+        8: [{'text': ADV_MESSAGE['mess_ask_photo']}], # TODO добавить команду "Далее"
         9: [{'text': ADV_MESSAGE['mess_confirm_adv']},
             {'text': adv_former, 'kbd_maker': sb.send_btn}],
         10: [{'text': _stop_text}],
@@ -62,15 +61,15 @@ class RegistrProces:
         6: {'name': 'district', 'required': False},
         7: {'name': 'price', 'required': True},
         8: {'name': 'photo', 'required': False},
-        9: {'name': 'confirmation', 'required': True},
-        10: {'name': 'registration', 'required': True},
+        9: {'name': None, 'required': True},
+        10: {'name': None, 'required': True},
     }
 
     _step_keywords = {
         9: {'keyword': KEYWORDS['send_btn'], 'source': 'button'}
     }
 
-    def _get_action(self, step: int) -> dict:
+    def _get_step_info(self, step: int) -> dict:
         return self._step_actions.get(step)
 
     def _get_step_names(self) -> dict:
@@ -96,9 +95,71 @@ class RegistrProces:
         to_hash = data.encode()
         hs = hashlib.md5(to_hash).digest()
         return base64.urlsafe_b64encode(hs).decode('ascii').replace('=', '')
+    
+    def __pars_mess_obj(self, mess_obj) -> dict:
+        def audio(mess_obj): 
+            return {
+                'audio': mess_obj.audio,
+                'caption': mess_obj.caption}
+
+        def photo(mess_obj):
+            return {
+                'photo': mess_obj.photo[-1].file_id, # выбор самого большого
+                'caption': mess_obj.caption}
+
+        def voice(mess_obj):
+            return {
+                'voice': mess_obj.voice,
+                'caption': mess_obj.caption}
+
+        def video(mess_obj):
+            return {
+                'video': mess_obj.video,
+                'caption': mess_obj.caption}
+
+        def document(mess_obj):
+            return {
+                'document': mess_obj.document,
+                'caption': mess_obj.caption}
+
+        def text(mess_obj):
+            return {'text': mess_obj.text,}
+                
+    
+        def location(mess_obj):
+            return {
+                'latitude': mess_obj.latitude,
+                'longitude': mess_obj.longitude,
+                'live_period': mess_obj.live_period}
+
+        def contact(mess_obj):
+            return {
+                'phone_number': mess_obj.phone_number,
+                'first_name': mess_obj.last_name,
+                'vcard': mess_obj.vcard}
+
+        def sticker(mess_obj):
+            return {'sticker':mess_obj.sticker}
+
+        data = {}
+        con_type = mess_obj.content_type
+        data['content_type'] = con_type
+        datasets = {
+            'audio': audio,
+            'photo': photo,
+            'voice': voice,
+            'video': video,
+            'document': document,
+            'text': text,
+            'location': location,
+            'contact': contact,
+            'sticker': sticker,       
+        }
+        data.update(datasets[con_type](mess_obj))
+        return data
 
     def is_act_required(self):
-        act = self._get_action(self.step)
+        act = self._get_step_info(self.step)
         return act['required']
 
     def pass_step(self):
@@ -112,7 +173,8 @@ class RegistrProces:
             self.step -= 1
         return self.exec()
 
-    def step_handler(self, data) -> dict:
+    def step_handler(self, data, mess_obj=None) -> dict:
+        step_increment = True
         if data is not None:
             validator = self._get_validator(self.step)
             if validator:
@@ -121,19 +183,27 @@ class RegistrProces:
                     return self.mess_wrapper(res['error'])
                 data = res['data']
 
-            act = self._get_action(self.step)
-            if act:
+            act = self._get_step_info(self.step)
+            if act and act['name']:
                 entry = act['name']
-                self.adv_blank[entry] = data
+                if mess_obj: # TODO добавить возм. выбора  data, даже если есть mess_obj
+                    data = self.__pars_mess_obj(mess_obj)
+                if isinstance(self.adv_blank[entry], list):
+                    self.adv_blank[entry].append(data)
+                    step_increment = False
+                else:
+                    self.adv_blank[entry] = data
 
-        if not self._fix_list and self.step < self._finish_step:
+        if not step_increment:
+            pass
+        elif not self._fix_list and self.step < self._finish_step:
             self.step += 1
         else:
             self.step = self._fix_list.pop()
         return self.mess_wrapper(self.step)
 
-    def exec(self, data=None) -> dict:
-        res = self.step_handler(data)
+    def exec(self, data=None, mess_obj=None) -> dict:
+        res = self.step_handler(data, mess_obj)
         if self.step == self._finish_step:
             return self.make_registration()
         return res
@@ -161,7 +231,12 @@ class RegistrProces:
                     text = text(self)
                 maker = data.get('kbd_maker')
                 keyboard = maker(self) if maker else None
-                pre_mess.append({'text': text, 'reply_markup': keyboard})
+                if isinstance(text, (list, tuple)):
+                    for elem in text:
+                        pre_mess.append(elem)
+                    pre_mess.append({'text': '-->', 'reply_markup': keyboard})
+                else:
+                    pre_mess.append({'text': text, 'reply_markup': keyboard})
             if not self._step_actions[value]['required']:
                 pre_mess.append({
                     'text': ADV_MESSAGE['pass_step'],

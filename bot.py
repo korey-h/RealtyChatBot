@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 import time
+from typing import List
 from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
@@ -23,7 +24,7 @@ LET_VIEW_EXS = True
 my_chat_id = os.getenv('CHAT_ID')
 my_thread_id = os.getenv('MESSAGE_THREAD_ID')
 bot = TeleBot(os.getenv('TOKEN'))
-SEND_METHODS= {
+SEND_METHODS = {
         'audio': bot.send_audio,
         'photo': bot.send_photo,
         'voice': bot.send_voice,
@@ -65,19 +66,20 @@ def try_exec_stack(message, user: User, data):
             reply_markup=sb.make_welcome_kbd())
 
 
-def send_multymessage(user_id, pre_mess: list):
+def send_multymessage(user_id, pre_mess: List[dict]):
     for mess_data in pre_mess:
-        mess_type = mess_data.get('mess_type') or 'text' # проверить, что тип есть в SEND_METHODS 
-        sender = SEND_METHODS[mess_type]
+        content_type = mess_data.pop('content_type', None) or 'text'
+        if content_type not in SEND_METHODS.keys():
+            content_type = 'text'
+        sender = SEND_METHODS[content_type]
         sender(user_id, **mess_data)
+        mess_data.update({'content_type': content_type})
 
 
 def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
-    pre_mess = [{
-        'text': mess,
-        'message_thread_id': message_thread_id
-    }]
-    send_multymessage(chat_id, pre_mess)
+    for item in mess:
+        item.update({'message_thread_id': message_thread_id})
+    send_multymessage(chat_id, mess)
 
 
 def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
@@ -156,7 +158,7 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
             crnt_step < user.adv_proces._finish_step):
         context = user.adv_proces.pass_step()
     else:
-        context = user.adv_proces.exec(data)
+        context = user.adv_proces.exec(data, mess_obj=message)
     if not user.adv_proces.is_active:
         mess = user.adv_proces.adv_f_send
         adv_sender(mess)
@@ -175,10 +177,10 @@ def text_router(message):
 @bot.message_handler(content_types=['photo', ])
 def media_router(message):
     user = get_user(message)
-    photo = message.photo[-1].file_id # выбрать самое большое
-    caption = message.caption
-    bot.send_photo(user.id, photo=photo, caption=caption) #пробная отправка
-    try_exec_stack(message, user, photo)
+    # photo = message.photo[-1].file_id # выбрать самое большое
+    # caption = message.caption
+    # bot.send_photo(user.id, photo=photo, caption=caption) #пробная отправка
+    try_exec_stack(message, user, 'photo')
 
 
 @bot.callback_query_handler(func=lambda call: True)
