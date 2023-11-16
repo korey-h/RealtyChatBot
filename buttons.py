@@ -40,6 +40,13 @@ def pass_keyboard(*args, **kwargs):
     return InlineKeyboardMarkup().add(pass_button)
 
 
+def farther_keyboard(*args, **kwargs):
+    pass_button = InlineKeyboardButton(
+        text=BUTTONS['farther'],
+        callback_data=json.dumps(
+            {'name': 'farther', 'payload': None}))
+    return InlineKeyboardMarkup().add(pass_button)
+
 def send_btn(*args, **kwargs):
     pass_button = InlineKeyboardButton(
         text=BUTTONS['send_adv'],

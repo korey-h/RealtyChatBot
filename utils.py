@@ -21,6 +21,8 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
 
     for unit in separately:
         key, value = list(unit.items())[0]
+        if not value:
+            continue
         if isinstance(value, dict):
             obj.adv_f_send.append({'text': template.format(ABW[key], ':')})
             obj.adv_f_send.append(value)

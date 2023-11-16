@@ -45,7 +45,8 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': ADV_MESSAGE['mess_ask_photo']}], # TODO добавить команду "Далее"
+        8: [{'text': ADV_MESSAGE['mess_ask_photo'],
+            'kbd_maker': sb.farther_keyboard}],
         9: [{'text': ADV_MESSAGE['mess_confirm_adv']},
             {'text': adv_former, 'kbd_maker': sb.send_btn}],
         10: [{'text': _stop_text}],
@@ -174,7 +175,7 @@ class RegistrProces:
         return self.exec()
 
     def step_handler(self, data, mess_obj=None) -> dict:
-        step_increment = True
+        do_step_increment = True
         if data is not None:
             validator = self._get_validator(self.step)
             if validator:
@@ -190,12 +191,12 @@ class RegistrProces:
                     data = self.__pars_mess_obj(mess_obj)
                 if isinstance(self.adv_blank[entry], list):
                     self.adv_blank[entry].append(data)
-                    step_increment = False
+                    do_step_increment = False
                 else:
                     self.adv_blank[entry] = data
 
-        if not step_increment:
-            pass
+        if not do_step_increment:
+            return
         elif not self._fix_list and self.step < self._finish_step:
             self.step += 1
         else:

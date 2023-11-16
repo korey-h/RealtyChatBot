@@ -3,6 +3,7 @@ BUTTONS = {
     'help': 'Подсказка',
     'cancel_this': 'Прекратить',
     'pass': 'Пропустить',
+    'farther': 'Далее',
     'send_adv': 'Разместить',
 }
 
@@ -33,7 +34,9 @@ ADV_MESSAGE = {
                          'a0fa23aaf2c49add9e667cbfc015bf8&source='
                          'constructorLink))',
     'mess_ask_price': 'Укажите цену в рублях.',
-    'mess_ask_photo': 'Вы можете добавить фотографии.',
+    'mess_ask_photo': 'Вы можете добавить фотографии и описание к ним.'
+                      'После завершения добавления нажмите кнопку '
+                      f'"{BUTTONS["farther"]}".',
     'adv_confirm': 'Объявление отправлено.',
     'not_integer': 'Ожидался ввод целого числа',
     'step_is_required': 'Этот шаг нельзя пропустить',
@@ -60,7 +63,7 @@ ADV_BLANK_WORDS = {
 
 
 ALLOWED_BUTTONS = {
-    'advert_forming': ['send', 'pass']    
+    'advert_forming': ['send', 'pass', 'farther']    
 }
 
 KEYWORDS = {

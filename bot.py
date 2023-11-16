@@ -159,6 +159,8 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
         context = user.adv_proces.pass_step()
     else:
         context = user.adv_proces.exec(data, mess_obj=message)
+    if not context:
+        return
     if not user.adv_proces.is_active:
         mess = user.adv_proces.adv_f_send
         adv_sender(mess)
