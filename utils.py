@@ -1,4 +1,57 @@
-from config import MESS_TEMPLATES, ADV_BLANK_WORDS as ABW
+from config import  ADV_BLANK_WORDS as ABW, MESS_TEMPLATES, MAX_IN_MEDIA
+
+from typing import List
+
+from telebot.types import (InputMediaAudio, InputMediaDocument, 
+                            InputMediaPhoto, InputMediaVideo)
+
+
+def media_sorter(items: List[dict]) -> List[dict]:
+    media_items = {
+        'audio': [],
+        'video': [],
+        'document': [],
+        'photo': []
+    }
+    input_media_class = {
+        'audio': InputMediaAudio,
+        'document': InputMediaDocument,
+        'photo':  InputMediaPhoto,
+        'video': InputMediaVideo
+    }
+
+    another_items = []
+    result = []
+    for item in items:
+        content_type = item['content_type']
+        if content_type in media_items.keys():
+            class_type = input_media_class[content_type]
+            media_items[content_type].append(
+                class_type(
+                    media=item[content_type],
+                    caption=item['caption']
+                )
+            )
+        else:
+            another_items.append(item)
+    
+    for value in media_items.values():
+        if not value:
+            continue
+        amount = len(value)
+        if amount <= MAX_IN_MEDIA:
+            result.append({'content_type': 'media', 'media': value})
+        else:
+            for i in range(MAX_IN_MEDIA, amount, MAX_IN_MEDIA):
+                elements = value[i - MAX_IN_MEDIA : i]
+                result.append({'content_type': 'media', 'media': elements})
+            rest = value[i : amount]
+            if rest:
+                result.append({'content_type': 'media', 'media': rest})
+
+    result.extend(another_items)
+    return result
+
 
 def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
     adv_blank: dict = obj.adv_blank
@@ -28,7 +81,10 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
             obj.adv_f_send.append(value)
         elif isinstance(value, (list, tuple)):
             obj.adv_f_send.append({'text': template.format(ABW[key], ':')})
-            for item in value:
-                obj.adv_f_send.append(item)
+            out = media_sorter(value)
+            if not out:
+                obj.adv_f_send.append({'text': 'пусто'})
+            else:
+                obj.adv_f_send.extend(out)
         
     return obj.adv_f_send

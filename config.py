@@ -1,3 +1,5 @@
+MAX_IN_MEDIA = 10
+
 BUTTONS = {
     'make_advert': 'Создать_объявление',
     'help': 'Подсказка',

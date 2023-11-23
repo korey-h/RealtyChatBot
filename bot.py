@@ -34,6 +34,7 @@ SEND_METHODS = {
         'location': bot.send_location,
         'contact': bot.send_contact,
         'sticker': bot.send_sticker,
+        'media': bot.send_media_group,
         }
 users = {}
 
@@ -179,9 +180,11 @@ def text_router(message):
 @bot.message_handler(content_types=['photo', ])
 def media_router(message):
     user = get_user(message)
-    # photo = message.photo[-1].file_id # выбрать самое большое
-    # caption = message.caption
-    # bot.send_photo(user.id, photo=photo, caption=caption) #пробная отправка
+    # foto = message.photo[-1].file_id # выбрать самое большое
+    # m_group = message.media_group_id
+    # print(foto, end='\n')
+    # print(m_group, end='\n')
+
     try_exec_stack(message, user, 'photo')
 
 
