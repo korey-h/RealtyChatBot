@@ -34,8 +34,12 @@ class RegistrProces:
         self.adv_f_send = '-'
         self.adv_blank_id = None
 
+    welcome_mess = [
+        {'text': ADV_MESSAGE['mess_welcome_create'],
+         'kbd_maker': sb.cancel_this_kbd}]
     _stop_text = 'to registration'
     _prior_messages = {
+        0: welcome_mess,
         1: [{'text': ADV_MESSAGE['mess_ask_space'],
             'kbd_maker': sb.cancel_this_kbd}],
         2: [{'text': ADV_MESSAGE['mess_ask_flour'],
@@ -54,6 +58,7 @@ class RegistrProces:
     }
 
     _step_actions = {
+        0: {'name': None, 'required': True},
         1: {'name': 'space', 'required': True},
         2: {'name': 'flour', 'required': True},
         3: {'name': 'material', 'required': True},
@@ -174,8 +179,9 @@ class RegistrProces:
             self.step -= 1
         return self.exec()
 
-    def step_handler(self, data, mess_obj=None) -> dict:
+    def step_handler(self, data, mess_obj=None) -> List[dict]:
         do_step_increment = True
+        pre_mess = []
         if data is not None:
             validator = self._get_validator(self.step)
             if validator:
@@ -194,6 +200,9 @@ class RegistrProces:
                     do_step_increment = False
                 else:
                     self.adv_blank[entry] = data
+        
+        if self.step == 0:
+            pre_mess.extend(self.mess_wrapper(self.step))
 
         if not do_step_increment:
             return
@@ -201,7 +210,8 @@ class RegistrProces:
             self.step += 1
         else:
             self.step = self._fix_list.pop()
-        return self.mess_wrapper(self.step)
+        pre_mess.extend(self.mess_wrapper(self.step))
+        return pre_mess
 
     def exec(self, data=None, mess_obj=None) -> dict:
         res = self.step_handler(data, mess_obj)
@@ -238,7 +248,8 @@ class RegistrProces:
                     pre_mess.append({'text': '-->', 'reply_markup': keyboard})
                 else:
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
-            if not self._step_actions[value]['required']:
+            requirement = self._step_actions.get(value)
+            if not requirement or not requirement['required']:
                 pre_mess.append({
                     'text': ADV_MESSAGE['pass_step'],
                     'reply_markup': sb.pass_keyboard()
