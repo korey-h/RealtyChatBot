@@ -7,6 +7,7 @@ from typing import List
 import buttons as sb
 
 from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
+from updater import DataTable, Ref
 from utils import adv_former
 
 
@@ -179,8 +180,8 @@ class RegistrProces:
             self.step -= 1
         return self.exec()
 
-    def step_handler(self, data, mess_obj=None) -> List[dict]:
-        do_step_increment = True
+    def step_handler(
+            self, data, mess_obj=None, do_step_increment=True) -> List[dict]:
         pre_mess = []
         if data is not None:
             validator = self._get_validator(self.step)
@@ -301,7 +302,97 @@ class RegistrProces:
 
 
 class RegUpdateProces(RegistrProces):
-    pass
+
+    welcome_mess = [
+        {'text': ADV_MESSAGE['mess_welcome_upd'],
+         'kbd_maker': sb.welcome_upd_butt}]
+
+    def __init__(self, blank: dict) -> None:
+        super().__init__()
+        validators = self._all_validators()
+        messages = self._all_prior_mess()
+        self.butt_table = DataTable(blank, validators, messages)
+        self._prior_messages[0] = self.welcome_mess
+    
+    def mess_wrapper(self, value) -> List[dict]:
+        pre_mess = []
+        keyboard = None
+        text = None
+        if isinstance(value, str):
+            pre_mess.append(
+                {'text': value, 'reply_markup': keyboard}
+                )  
+        elif isinstance(value, (list, tuple)):
+            for elem in value:
+                text = elem['text']
+                if callable(text):
+                    text = text(self)
+                maker = elem.get('kbd_maker')
+                keyboard = maker(self) if maker else None
+                pre_mess.append(
+                    {'text': text, 'reply_markup': keyboard}
+                    )
+        return pre_mess                   
+    
+    def step_handler(self, data, mess_obj=None, ) -> List[dict]:
+        pre_mess = []
+        if data is None:
+            if self.step == 0:
+                pre_mess.extend(self.mess_wrapper(self.welcome_mess))
+        elif isinstance(data, dict):
+            row_id = data['pld']
+            self.step = row_id
+            rec = self.butt_table.get(row_id)
+            if rec:
+                pre_mess.extend(self.mess_wrapper(rec.message))
+            else:
+                pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_deleted']))
+        else:
+            row = self.butt_table.get(self.step)
+            if (isinstance(row.value, Ref) and 
+                    isinstance(row.value.val, (int, str))):
+                validator = row.validator
+                if validator:
+                    res = validator(data)
+                    if res['error']:
+                        return self.mess_wrapper(res['error'])
+                    data = res['data']                
+                row.value.val = data
+            
+            elif (isinstance(row.value, Ref) and 
+                    isinstance(row.value.val, dict) and mess_obj):
+                data = self.__pars_mess_obj(mess_obj)
+                row.value.val = data
+                  
+            elif isinstance(row.value, list) and mess_obj:
+                data = self.__pars_mess_obj(mess_obj)
+                root = self.butt_table.get_root(row)
+                root.append(data)
+            pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_save']))
+
+        return pre_mess
+    
+    def _to_name_steps(self):
+        named_steps = {}
+        for key, data in self._step_actions.items():
+            if data['name']:
+                named_steps.update({data['name']: key})
+        return named_steps
+
+    def _all_validators(self):
+        named_steps = self._to_name_steps()
+        validators = {}
+        for name, num in named_steps.items():
+            validators[name] = self._get_validator(num)
+        return validators
+    
+    def _all_prior_mess(self):
+        named_steps = self._to_name_steps()
+        mess = {}       
+        for name, num in named_steps.items():
+            mess[name] = self._prior_messages.get(num)
+        return mess
+
 
 
 class User:
@@ -357,7 +448,8 @@ class User:
         return None
 
     def update_advert(self):
-        self.adv_proces = self.adv_update_class()
+        from fixtures import test_blank
+        self.adv_proces = self.adv_update_class(test_blank())
         return None
 
     def stop_advert(self):

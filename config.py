@@ -7,6 +7,35 @@ BUTTONS = {
     'pass': 'Пропустить',
     'farther': 'Далее',
     'send_adv': 'Разместить',
+    'audio': 'Аудио',
+    'photo': 'Фото',
+    'voice': 'Голосовое',
+    'video': 'Видео',
+    'document': 'Документ',
+    'text': 'Текст',
+    'location': 'Геопозиция',
+    'contact': 'Контакт',
+    'sticker': 'Стикер',
+    'space': 'Площадь',
+    'flour': 'Этаж',
+    'material': 'Материал',
+    'address': 'Адрес',
+    'year': 'Год',
+    'district': 'Район',
+    'price': 'Цена.',
+    'photo': 'Фото',  
+}
+
+ST_TITLE = {
+    'audio': 'ауд',
+    'photo': 'фот',
+    'voice': 'гол',
+    'video': 'вид',
+    'document': 'док',
+    'text': 'т',
+    'location': 'гео',
+    'contact': 'кон',
+    'sticker': 'стик',
 }
 
 MESSAGES = {
@@ -17,6 +46,7 @@ MESSAGES = {
     'not_allowed_btn': 'Нажатая кнопка не используется '
                        'в текущем процессе',
     'mess_cancel_this': 'Команда "{}" отменена',
+    'adv_always_on': 'Процесс был запущен ранее!'
 }
 
 EMOJI = {'bicyclist': '\U0001F6B4', }
@@ -51,6 +81,9 @@ ADV_MESSAGE = {
     'mess_confirm_adv': 'Прошу подтвердить объявление:\n ',
     'mess_adv_send': 'Объявление отправлено!',
     'wrong_year': 'Год постройки не может быть позже текущего года!',
+    'rec_deleted':'Запись была удалена. Её нельзя отредактировать,'
+                  ' но можно добавить новую',
+    'rec_save': 'Записано.'
     }
 
 MESS_TEMPLATES = {
@@ -70,7 +103,8 @@ ADV_BLANK_WORDS = {
 
 
 ALLOWED_BUTTONS = {
-    'advert_forming': ['send', 'pass', 'farther']    
+    'advert_forming': ['send', 'pass', 'farther'],
+    'advert_update':  ['send', 'pass', 'farther', 'update'],
 }
 
 KEYWORDS = {

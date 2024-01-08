@@ -36,7 +36,7 @@ def pass_keyboard(*args, **kwargs):
     pass_button = InlineKeyboardButton(
         text=BUTTONS['pass'],
         callback_data=json.dumps(
-            {'name': 'pass', 'payload': None}))
+            {'name': 'pass', 'pld': None}))
     return InlineKeyboardMarkup().add(pass_button)
 
 
@@ -44,12 +44,28 @@ def farther_keyboard(*args, **kwargs):
     pass_button = InlineKeyboardButton(
         text=BUTTONS['farther'],
         callback_data=json.dumps(
-            {'name': 'farther', 'payload': None}))
+            {'name': 'farther', 'pld': None}))
     return InlineKeyboardMarkup().add(pass_button)
 
 def send_btn(*args, **kwargs):
     pass_button = InlineKeyboardButton(
         text=BUTTONS['send_adv'],
         callback_data=json.dumps(
-            {'name': 'send', 'payload': KEYWORDS['send_btn']}))
+            {'name': 'send', 'pld': KEYWORDS['send_btn']}))
     return InlineKeyboardMarkup().add(pass_button)
+
+
+def welcome_upd_butt(obj, *args, **kwargs):
+    buttons = []
+
+    am_chapter_butts = len(obj.adv_blank)
+    chapter_butts = [
+        obj.butt_table.get(i) for i in range(1, am_chapter_butts + 1)]
+    for butt_data in chapter_butts:
+        button = InlineKeyboardButton(
+        text=butt_data.title,
+        callback_data=json.dumps(
+            {'name': 'update', 'pld': butt_data.id}))
+        buttons.append(button)
+    return InlineKeyboardMarkup().add(*buttons)
+    

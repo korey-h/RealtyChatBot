@@ -153,7 +153,7 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
             return
-        data = data['payload'] if 'payload' in data.keys() else data
+        data = data['pld'] if 'pld' in data.keys() else data
     crnt_step = user.adv_proces.step
     if (data is None and crnt_step > 0 and
             crnt_step < user.adv_proces._finish_step):
@@ -170,6 +170,39 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
     send_multymessage(user.id, context)
 
 
+@bot.message_handler(commands=['correct'], )
+def redaction(message, user: User = None, data=None, *args, **kwargs):
+    '''Редактирование объявления'''
+
+    self_name = 'advert_update'
+    user = user if user else get_user(message)
+    called_from = kwargs.get('from')
+
+    if not user.adv_proces:
+        user.update_advert()
+        user.set_cmd_stack((self_name, redaction))
+
+    elif not called_from:
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['adv_always_on']
+            )
+
+    if isinstance(data, dict):
+        if not is_buttons_alowwed(self_name, data, user):
+            return
+        context = user.adv_proces.exec(data)
+    else:
+        context = user.adv_proces.exec(data, mess_obj=message)
+    if not context:
+        return
+    if not user.adv_proces.is_active:
+        mess = user.adv_proces.adv_f_send
+        adv_sender(mess)
+        user.stop_advert()
+        user.cmd_stack_pop()
+    send_multymessage(user.id, context)
+
 @bot.message_handler(content_types=['text'])
 def text_router(message):
     user = get_user(message)
@@ -180,11 +213,6 @@ def text_router(message):
 @bot.message_handler(content_types=['photo', ])
 def media_router(message):
     user = get_user(message)
-    # foto = message.photo[-1].file_id # выбрать самое большое
-    # m_group = message.media_group_id
-    # print(foto, end='\n')
-    # print(m_group, end='\n')
-
     try_exec_stack(message, user, 'photo')
 
 
