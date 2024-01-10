@@ -2,12 +2,12 @@ def test_blank():
     blank = {
         'space': 160,
         'flour': 6,
-        'about': [],
+        'material': [],
+        'address': 'Rus',
+        'year': 1996,
         'district': 'Defaulty',
         'price': 10000,
         'photo': [],
-        'nano': '',
-        'pano': '',
         }
 
     au1 = {'audio': 'a5+5+65+5+565', 'caption': 'au1', 'content_type':'audio'}
@@ -26,6 +26,6 @@ def test_blank():
     doc3 = {'document': 'doc__146uju5u55', 'caption': 'doc_3', 'content_type':'document'}
     doc4 = {'document': 'doc__146uju5u55', 'caption': 'doc_4', 'content_type':'document'}
 
-    blank['about'] = [doc1, fot4, doc2, doc3, doc4]
+    blank['material'] = [doc1, fot4, doc2, doc3, doc4]
     blank['photo'] = [fot1, fot2, au1, au2, fot3, au3, au4]
     return blank

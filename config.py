@@ -27,15 +27,15 @@ BUTTONS = {
 }
 
 ST_TITLE = {
-    'audio': 'ауд',
-    'photo': 'фот',
-    'voice': 'гол',
-    'video': 'вид',
-    'document': 'док',
-    'text': 'т',
-    'location': 'гео',
-    'contact': 'кон',
-    'sticker': 'стик',
+    'audio': 'ауд.',
+    'photo': 'фото',
+    'voice': 'гол.',
+    'video': 'вид.',
+    'document': 'док.',
+    'text': 'т.',
+    'location': 'гео.',
+    'contact': 'кон.',
+    'sticker': 'стик.',
 }
 
 MESSAGES = {

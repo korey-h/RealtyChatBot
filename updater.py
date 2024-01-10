@@ -1,4 +1,12 @@
+from buttons import elements_butt
 from config import BUTTONS, ST_TITLE
+
+
+# -------------------------------------
+elem_group_mess = [
+    {'text': 'Выберите элемент:',
+     'kbd_maker': elements_butt}]
+# -------------------------------------
 
 
 class Ref:
@@ -82,6 +90,8 @@ class DataTable:
         return root
     
     def rep(self, id:int, value):
+        if isinstance(value, DataRow):
+            value.id = id
         self.__store[id] = value
     
     def getall(self)-> dict:
@@ -93,11 +103,14 @@ class DataTable:
             rec = Ref(blank, key)
             validator = validators.get(key) if validators else None
             message = messages.get(key) if messages else None
+            if message and isinstance(value, list):
+                message.extend(elem_group_mess)
             row = DataRow(value=rec, vtype=None, name=key, message=message,
                           validator=validator)
             row_id = self.add(row)
             if isinstance(value, list):
                 self.__complex_fields.setdefault(row_id, value)
+        self.update()
 
     @property
     def last_id(self) -> int:
@@ -123,15 +136,16 @@ class DataTable:
         gtype = self.get(parent).vtype
         existents = self.relations.get(parent)
         point = 0
-        num = 1
+        num = 0
         if existents:
             point = len(existents)
-            num = point + 1
+            num = point
         for elem in group[point::]:
+            num += 1
             row = DataRow(value=elem, vtype=gtype, parent=parent, name=num)
             self.add(row)
 
-    def update(self): 
+    def update(self):
         for key, seq in self.complex_fields.items():
             groups = self.pars_by_type(seq)
             type_ids = {}
@@ -142,12 +156,13 @@ class DataTable:
                     type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
-                row = DataRow(value=group, vtype=gtype, parent=key, name=gtype)
+                row = DataRow(value=group, vtype=gtype, parent=key, name=gtype,
+                              message=elem_group_mess)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)
                 else:
-                    parent = data_table.add(row)
+                    parent = self.add(row)
                 self.__group_to_table(parent=parent, group=group)
 
 
@@ -159,8 +174,8 @@ if  __name__ == '__main__':
     data_table.update()
     print(data_table.relations)
     print(data_table.getall()[data_table.last_id].title)
-    blank['about'].append(fot5)
-    blank['about'].append(fot5)
+    blank['material'].append(fot5)
+    blank['material'].append(fot5)
     blank['photo'].append(fot5)
     data_table.update()
     print(data_table.relations)

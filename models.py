@@ -103,7 +103,7 @@ class RegistrProces:
         hs = hashlib.md5(to_hash).digest()
         return base64.urlsafe_b64encode(hs).decode('ascii').replace('=', '')
     
-    def __pars_mess_obj(self, mess_obj) -> dict:
+    def _pars_mess_obj(self, mess_obj) -> dict:
         def audio(mess_obj): 
             return {
                 'audio': mess_obj.audio,
@@ -195,7 +195,7 @@ class RegistrProces:
             if act and act['name']:
                 entry = act['name']
                 if mess_obj: # TODO добавить возм. выбора  data, даже если есть mess_obj
-                    data = self.__pars_mess_obj(mess_obj)
+                    data = self._pars_mess_obj(mess_obj)
                 if isinstance(self.adv_blank[entry], list):
                     self.adv_blank[entry].append(data)
                     do_step_increment = False
@@ -311,7 +311,8 @@ class RegUpdateProces(RegistrProces):
         super().__init__()
         validators = self._all_validators()
         messages = self._all_prior_mess()
-        self.butt_table = DataTable(blank, validators, messages)
+        self.adv_blank = blank.copy()
+        self.butt_table = DataTable(self.adv_blank, validators, messages)
         self._prior_messages[0] = self.welcome_mess
     
     def mess_wrapper(self, value) -> List[dict]:
@@ -361,13 +362,15 @@ class RegUpdateProces(RegistrProces):
             
             elif (isinstance(row.value, Ref) and 
                     isinstance(row.value.val, dict) and mess_obj):
-                data = self.__pars_mess_obj(mess_obj)
+                data = self._pars_mess_obj(mess_obj)
                 row.value.val = data
                   
-            elif isinstance(row.value, list) and mess_obj:
-                data = self.__pars_mess_obj(mess_obj)
+            elif (isinstance(row.value, list) or
+                    isinstance(row.value.val, list)) and mess_obj:
+                data = self._pars_mess_obj(mess_obj)                
                 root = self.butt_table.get_root(row)
-                root.append(data)
+                root.value.val.append(data)
+            self.butt_table.update()
             pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_save']))
 
         return pre_mess

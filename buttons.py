@@ -68,4 +68,23 @@ def welcome_upd_butt(obj, *args, **kwargs):
             {'name': 'update', 'pld': butt_data.id}))
         buttons.append(button)
     return InlineKeyboardMarkup().add(*buttons)
+
+def elements_butt(obj, *args, **kwargs):
+    row = obj.butt_table.get(obj.step)
+    if (not isinstance(row.value, list) and
+            not isinstance(row.value.val, list)):
+        return
+    elements_id = obj.butt_table.relations.get(row.id)
+    if not elements_id:
+        return
     
+    buttons = []
+    for el_id in elements_id:
+        el = obj.butt_table.get(el_id)
+        button = InlineKeyboardButton(
+        text=el.title,
+        callback_data=json.dumps(
+            {'name': 'update', 'pld': el.id}))
+        buttons.append(button)
+    return InlineKeyboardMarkup().add(*buttons)
+     
