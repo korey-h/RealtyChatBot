@@ -74,12 +74,15 @@ def elements_butt(obj, *args, **kwargs):
     if (not isinstance(row.value, list) and
             not isinstance(row.value.val, list)):
         return
-    elements_id = obj.butt_table.relations.get(row.id)
-    if not elements_id:
+    ids_for_out = obj.butt_table.relations.get(row.id)
+    if not ids_for_out:
         return
+    elif len(ids_for_out) == 1:
+        ids_in_group = obj.butt_table.relations.get(ids_for_out[0])        
+        ids_for_out = ids_in_group if ids_in_group else ids_for_out
     
     buttons = []
-    for el_id in elements_id:
+    for el_id in ids_for_out:
         el = obj.butt_table.get(el_id)
         button = InlineKeyboardButton(
         text=el.title,
