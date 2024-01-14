@@ -40,7 +40,9 @@ def pass_keyboard(*args, **kwargs):
     return InlineKeyboardMarkup().add(pass_button)
 
 
-def farther_keyboard(*args, **kwargs):
+def farther_keyboard(obj, *args, **kwargs):
+    if hasattr(obj, 'butt_table'):
+        return
     pass_button = InlineKeyboardButton(
         text=BUTTONS['farther'],
         callback_data=json.dumps(

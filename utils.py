@@ -1,4 +1,5 @@
-from config import  ADV_BLANK_WORDS as ABW, MESS_TEMPLATES, MAX_IN_MEDIA
+from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE,
+                     MESS_TEMPLATES, MAX_IN_MEDIA)
 
 from typing import List
 
@@ -88,3 +89,14 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
                 obj.adv_f_send.extend(out)
         
     return obj.adv_f_send
+
+
+def review_elem(obj) -> dict:
+    mess = {'text': '.'}
+    row = obj.butt_table.get(obj.step)
+    value = row.value.val
+    if isinstance(value, (int, str)):
+        mess = {'text': ADV_MESSAGE['before'] + str(value)}
+    elif isinstance(value, dict):
+        mess = value
+    return mess

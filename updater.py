@@ -1,11 +1,15 @@
+import text_generators as ttg
+
 from buttons import elements_butt
 from config import BUTTONS, ST_TITLE
+from utils import review_elem
 
 
 # -------------------------------------
 elem_group_mess = [
-    {'text': 'Выберите элемент:',
+    {'text': 'Выберите, что нужно заменить:',
      'kbd_maker': elements_butt}]
+uno_elem_mess = [review_elem, {'text': ttg.text_uno_elem}]
 # -------------------------------------
 
 
@@ -105,6 +109,8 @@ class DataTable:
             message = messages.get(key) if messages else None
             if message and isinstance(value, list):
                 message.extend(elem_group_mess)
+            elif message and isinstance(value, (int, str)):
+                message.extend(uno_elem_mess)
             row = DataRow(value=rec, vtype=None, name=key, message=message,
                           validator=validator)
             row_id = self.add(row)
@@ -142,7 +148,8 @@ class DataTable:
             num = point
         for elem in group[point::]:
             num += 1
-            row = DataRow(value=elem, vtype=gtype, parent=parent, name=num)
+            row = DataRow(value=elem, vtype=gtype, parent=parent, name=num,
+                          message=uno_elem_mess)
             self.add(row)
 
     def update(self):

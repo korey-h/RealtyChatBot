@@ -5,6 +5,7 @@ import hashlib
 from typing import List
 
 import buttons as sb
+import text_generators as ttg
 
 from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
 from updater import DataTable, Ref
@@ -50,7 +51,7 @@ class RegistrProces:
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
         6: [{'text': ADV_MESSAGE['mess_ask_district']}],
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': ADV_MESSAGE['mess_ask_photo'],
+        8: [{'text': ttg.text_add_foto,
             'kbd_maker': sb.farther_keyboard}],
         9: [{'text': ADV_MESSAGE['mess_confirm_adv']},
             {'text': adv_former, 'kbd_maker': sb.send_btn}],
@@ -325,6 +326,10 @@ class RegUpdateProces(RegistrProces):
                 )  
         elif isinstance(value, (list, tuple)):
             for elem in value:
+                if callable(elem):
+                    pre_mess.append(elem(self))
+                    continue
+
                 text = elem['text']
                 if callable(text):
                     text = text(self)
