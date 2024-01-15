@@ -400,8 +400,17 @@ class RegUpdateProces(RegistrProces):
         for name, num in named_steps.items():
             mess[name] = self._prior_messages.get(num)
         return mess
-
-
+    
+    def delete(self):
+        row = self.butt_table.get(self.step)
+        if row.required:
+            # вернуть сообщение, что удалить полностью нельзя,
+            # но можно редактировать
+            return
+        self.butt_table.null(self.step)
+            # вернуть сообщение, что информация 
+            # стёрта
+        return
 
 class User:
     adv_proces_class = RegistrProces

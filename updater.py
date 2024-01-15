@@ -26,13 +26,16 @@ class Ref:
     def val(self, value):
         self.__node[self.__key] = value
     
+    def null(self):
+        self.__node[self.__key] = None
+    
     def __str__(self):
         return 'ref:' + str(self.__node[self.__key])
 
 
 class DataRow:
     def __init__(self, value, vtype, name, parent=None, id=None,
-                 validator=None, message=None ):
+                 validator=None, message=None, required=None):
         self.value = value
         self.vtype = vtype
         self.parent = parent
@@ -41,6 +44,7 @@ class DataRow:
         self.id = id
         self.validator = validator
         self.message = message
+        self.required = required
 
     @property
     def title(self, full=BUTTONS, short=ST_TITLE):
@@ -86,6 +90,13 @@ class DataTable:
     
     def get(self, id:int):
         return self.__store.get(id)
+    
+    def null(self, id:int):
+        row = self.__store.get(id)
+        if isinstance(row.value, Ref):
+            row.value.null()
+        else:
+            self.rep(id, None)        
     
     def get_root(self, node: DataRow):
         root = node
