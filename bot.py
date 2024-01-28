@@ -52,14 +52,17 @@ def get_user(message) -> User:
     return users.setdefault(user_id, User(id=user_id))
 
 
-def try_exec_stack(message, user: User, data):
+def try_exec_stack(message, user: User, data, **kwargs):
     command = user.get_cmd_stack()
     if command and callable(command['cmd']):
+        call_from = 'stack'
+        if kwargs and kwargs.get('from'):
+            call_from = kwargs.get('from')
         context = {
             'message': message,
             'user': user,
             'data': data,
-            'from': 'stack'}
+            'from': call_from}
         command['cmd'](**context)
     else:
         bot.send_message(
@@ -187,6 +190,10 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
             user.id,
             text=MESSAGES['adv_always_on']
             )
+    elif called_from == 'delete':
+        context = user.adv_proces.delete()
+        send_multymessage(user.id, context)
+        return
 
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
@@ -202,6 +209,14 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
         user.stop_advert()
         user.cmd_stack_pop()
     send_multymessage(user.id, context)
+
+
+@bot.message_handler(commands=['delete'], )
+def delete(message, user: User = None, data=None):
+    user = get_user(message)
+    kwargs = {'from': 'delete'}
+    try_exec_stack(message, user, data, **kwargs)
+
 
 @bot.message_handler(content_types=['text'])
 def text_router(message):

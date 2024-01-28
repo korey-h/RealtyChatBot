@@ -404,13 +404,10 @@ class RegUpdateProces(RegistrProces):
     def delete(self):
         row = self.butt_table.get(self.step)
         if row.required:
-            # вернуть сообщение, что удалить полностью нельзя,
-            # но можно редактировать
-            return
+            return self.mess_wrapper(ADV_MESSAGE['non_delete'])
+        
         self.butt_table.null(self.step)
-            # вернуть сообщение, что информация 
-            # стёрта
-        return
+        return self.mess_wrapper(ADV_MESSAGE['del_complete'])
 
 class User:
     adv_proces_class = RegistrProces

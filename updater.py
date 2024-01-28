@@ -27,7 +27,16 @@ class Ref:
         self.__node[self.__key] = value
     
     def null(self):
-        self.__node[self.__key] = None
+        rec = self.__node[self.__key]
+        if isinstance(rec, int):
+            rec = 0
+        elif isinstance(rec, str):
+            rec = '--'
+        elif isinstance(rec,list):
+            rec = []
+        else:
+            rec = None
+        self.__node[self.__key] = rec
     
     def __str__(self):
         return 'ref:' + str(self.__node[self.__key])
@@ -96,7 +105,7 @@ class DataTable:
         if isinstance(row.value, Ref):
             row.value.null()
         else:
-            self.rep(id, None)        
+            self.rep(id, None)
     
     def get_root(self, node: DataRow):
         root = node
