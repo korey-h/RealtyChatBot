@@ -86,6 +86,8 @@ def elements_butt(obj, *args, **kwargs):
     buttons = []
     for el_id in ids_for_out:
         el = obj.butt_table.get(el_id)
+        if el is None or el.value is None:
+            continue
         button = InlineKeyboardButton(
         text=el.title,
         callback_data=json.dumps(

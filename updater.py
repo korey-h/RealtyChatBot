@@ -104,8 +104,15 @@ class DataTable:
         row = self.__store.get(id)
         if isinstance(row.value, Ref):
             row.value.null()
+        elif isinstance(row.value, list):
+            for elem in row.value:
+                if isinstance(elem, Ref):
+                    elem.null()
+            for elem_id in self.relations.get(row.id, []):
+                self.get(elem_id).value = None
+            row.value = None
         else:
-            self.rep(id, None)
+            row.value = None
     
     def get_root(self, node: DataRow):
         root = node
@@ -153,6 +160,8 @@ class DataTable:
     def pars_by_type(self, heap: list, type_key='content_type'):
         out = {}
         for num, item in enumerate(heap):
+            if item is None:
+                continue
             rec = Ref(heap, num)
             group: list = out.setdefault(item[type_key], [])
             group.append(rec)

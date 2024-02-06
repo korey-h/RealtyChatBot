@@ -8,7 +8,7 @@ import buttons as sb
 import text_generators as ttg
 
 from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
-from updater import DataTable, Ref
+from updater import DataRow, DataTable, Ref
 from utils import adv_former
 
 
@@ -315,6 +315,7 @@ class RegUpdateProces(RegistrProces):
         self.adv_blank = blank.copy()
         self.butt_table = DataTable(self.adv_blank, validators, messages)
         self._prior_messages[0] = self.welcome_mess
+        self.del_is_conf = True
     
     def mess_wrapper(self, value) -> List[dict]:
         pre_mess = []
@@ -349,12 +350,15 @@ class RegUpdateProces(RegistrProces):
             row_id = data['pld']
             self.step = row_id
             rec = self.butt_table.get(row_id)
-            if rec:
+            if rec and rec.value is not None:
                 pre_mess.extend(self.mess_wrapper(rec.message))
             else:
                 pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_deleted']))
         else:
             row = self.butt_table.get(self.step)
+            if row is None or row.value is None:
+                self._set_nondeleted_step()
+                row = self.butt_table.get(self.step)
             if (isinstance(row.value, Ref) and 
                     isinstance(row.value.val, (int, str))):
                 validator = row.validator
@@ -401,13 +405,29 @@ class RegUpdateProces(RegistrProces):
             mess[name] = self._prior_messages.get(num)
         return mess
     
+    def _set_nondeleted_step(self, row: DataRow = None):
+        if not row:
+            row = self.butt_table.get(self.step)
+        while row.parent and row.value is None:
+            row = self.butt_table.get(row.parent)
+            self.step = row.id
+        return self.step
+    
     def delete(self):
         row = self.butt_table.get(self.step)
         if row.required:
             return self.mess_wrapper(ADV_MESSAGE['non_delete'])
-        
-        self.butt_table.null(self.step)
-        return self.mess_wrapper(ADV_MESSAGE['del_complete'])
+        elif isinstance(row.value, list):
+            if self.del_is_conf:
+                self.del_is_conf = False
+            else:
+                self.del_is_conf = True
+        if self.del_is_conf:
+            self.butt_table.null(self.step)
+            self._set_nondeleted_step() 
+            return self.mess_wrapper(ADV_MESSAGE['del_complete'])
+        else:
+            return self.mess_wrapper(ADV_MESSAGE['del_confirm'])
 
 class User:
     adv_proces_class = RegistrProces
