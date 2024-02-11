@@ -99,20 +99,23 @@ class DataTable:
     
     def get(self, id:int):
         return self.__store.get(id)
-    
+
+    def _null_relations(self, id:int, parent_id:int=None):
+        if self.relations.get(id):
+            self.relations[id] = []
+        if parent_id:
+            items = self.relations.get(parent_id)
+            items.remove(id)
+
     def null(self, id:int):
-        row = self.__store.get(id)
+        row =self.get(id)
         if isinstance(row.value, Ref):
             row.value.null()
         elif isinstance(row.value, list):
-            for elem in row.value:
-                if isinstance(elem, Ref):
-                    elem.null()
-            for elem_id in self.relations.get(row.id, []):
-                self.get(elem_id).value = None
-            row.value = None
-        else:
-            row.value = None
+            for elem_id in row.value:
+                self.null(elem_id)
+        row.value = None
+        self._null_relations(id, row.parent)
     
     def get_root(self, node: DataRow):
         root = node
@@ -168,6 +171,7 @@ class DataTable:
         return out
 
     def __group_to_table(self, parent:int, group:list):
+        ids = []
         gtype = self.get(parent).vtype
         existents = self.relations.get(parent)
         point = 0
@@ -179,7 +183,9 @@ class DataTable:
             num += 1
             row = DataRow(value=elem, vtype=gtype, parent=parent, name=num,
                           message=uno_elem_mess)
-            self.add(row)
+            elem_id = self.add(row)
+            ids.append(elem_id)
+        return ids
 
     def update(self):
         for key, seq in self.complex_fields.items():
@@ -192,29 +198,82 @@ class DataTable:
                     type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
-                row = DataRow(value=group, vtype=gtype, parent=key, name=gtype,
+                row = DataRow(value=[], vtype=gtype, parent=key, name=gtype,
                               message=elem_group_mess)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)
                 else:
                     parent = self.add(row)
-                self.__group_to_table(parent=parent, group=group)
+                row.value = self.__group_to_table(parent=parent, group=group)                
 
 
 if  __name__ == '__main__':
-    from fixtures import test_blank
-    blank = test_blank()
-    fot5 = {'photo': 'fotoi546uju5u56', 'caption': 'foto_5', 'content_type':'photo'}
-    data_table = DataTable(blank)
-    data_table.update()
-    print(data_table.relations)
-    print(data_table.getall()[data_table.last_id].title)
-    blank['material'].append(fot5)
-    blank['material'].append(fot5)
-    blank['photo'].append(fot5)
-    data_table.update()
-    print(data_table.relations)
-    print(data_table.getall()[data_table.last_id].title)
-    row = data_table.get(22)
-    print(data_table.get_root(row).id)
+    def set_view_attr():
+        from fixtures import test_blank
+        blank = test_blank()
+        fot5 = {'photo': 'fotoi546uju5u56', 'caption': 'foto_5', 'content_type':'photo'}
+        data_table = DataTable(blank)
+        data_table.update()
+        print(data_table.relations)
+        print(data_table.getall()[data_table.last_id].title)
+        blank['material'].append(fot5)
+        blank['material'].append(fot5)
+        blank['photo'].append(fot5)
+        data_table.update()
+        print(data_table.relations)
+        print(data_table.getall()[data_table.last_id].title)
+        row = data_table.get(22)
+        print(data_table.get_root(row).id)
+
+
+    def review_deletion():
+        test_data = ['a', 'b', 'c', 'd', 'e', 'f']
+        ra = Ref(test_data, 0)
+        rb = Ref(test_data, 1)
+        rc = Ref(test_data, 2)
+        rd = Ref(test_data, 3)
+        re = Ref(test_data, 4)
+        rf = Ref(test_data, 5)
+        data = {
+            1: DataRow(value=ra, vtype='audio', name='A', parent=8),
+            2: DataRow(value=rb, vtype='audio', name='B', parent=8),
+            3: DataRow(value=rc, vtype='photo', name='C', parent=9),
+            4: DataRow(value=rd, vtype='photo', name='D', parent=9),
+            5: DataRow(value=re, vtype='photo', name='E', parent=7),
+            6: DataRow(value=rf, vtype='photo', name='F', parent=7),
+            7: DataRow(value=[5, 6], vtype='photo', name='EF', parent=9),
+            8: DataRow(value=[1, 2], vtype='audio', name='AB'),
+            9: DataRow(value=[3, 4, 7], vtype='photo', name='CD')
+        }
+
+        relations = {
+            7: [5, 6],
+            8: [1, 2],
+            9: [3, 4, 7]
+        }
+
+
+        def null_value(data_table:dict, id:int):
+            row = data_table.get(id)
+            if isinstance(row.value, Ref):
+                row.value.null()
+            elif isinstance(row.value, list):
+                for elem_id in row.value:
+                    null_value(data_table, elem_id)
+            row.value = None
+            null_relations(id, row.parent)
+
+
+        def null_relations(id:int, parent_id:int=None):
+            if relations.get(id):
+                relations[id] = []
+            if parent_id:
+                items = relations.get(parent_id)
+                items.remove(id)   
+
+        null_value(data, 7)
+        for key, row in data.items():
+            print(f'{key}: {row.value}')
+        print('test_data: ',test_data)
+        print('ralations', relations)
