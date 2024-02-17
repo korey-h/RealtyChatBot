@@ -33,7 +33,8 @@ class Ref:
         elif isinstance(rec, str):
             rec = '--'
         elif isinstance(rec,list):
-            rec = []
+            rec = [None for _ in rec]
+            # rec = []
         else:
             rec = None
         self.__node[self.__key] = rec
@@ -100,22 +101,35 @@ class DataTable:
     def get(self, id:int):
         return self.__store.get(id)
 
-    def _null_relations(self, id:int, parent_id:int=None):
+    def _null_relations(self, id:int):
+        parent_id = self.get(id).parent
         if self.relations.get(id):
-            self.relations[id] = []
+            ids = self.relations[id].copy()
+            for elem_id in ids:
+                self._null_relations(elem_id)
         if parent_id:
             items = self.relations.get(parent_id)
             items.remove(id)
+    
+    def _null_value(self, id:int):
+        row =self.get(id)
+        ids = []
+        if isinstance(row.value, Ref):
+            if isinstance(row.value.val, list):
+                ids = self.relations.get(id, []).copy()
+            else:
+                row.value.null()
+        elif isinstance(row.value, list):
+            ids = row.value.copy()
+        if ids:
+            for elem_id in ids:
+                self._null_value(elem_id)
+        if row.parent:
+            row.value = None
 
     def null(self, id:int):
-        row =self.get(id)
-        if isinstance(row.value, Ref):
-            row.value.null()
-        elif isinstance(row.value, list):
-            for elem_id in row.value:
-                self.null(elem_id)
-        row.value = None
-        self._null_relations(id, row.parent)
+        self._null_value(id)
+        self._null_relations(id)
     
     def get_root(self, node: DataRow):
         root = node
@@ -188,24 +202,23 @@ class DataTable:
         return ids
 
     def update(self):
-        for key, seq in self.complex_fields.items():
+        for row_id, seq in self.complex_fields.items():
             groups = self.pars_by_type(seq)
             type_ids = {}
-            rel = self.relations.get(key)
-            if rel:
-                for group_id in rel:
-                    gtype = self.get(group_id).vtype
-                    type_ids.update({gtype: group_id})
+            rel = self.relations.get(row_id, [])
+            for group_id in rel:
+                gtype = self.get(group_id).vtype
+                type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
-                row = DataRow(value=[], vtype=gtype, parent=key, name=gtype,
+                row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
                               message=elem_group_mess)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)
                 else:
                     parent = self.add(row)
-                row.value = self.__group_to_table(parent=parent, group=group)                
+                row.value = self.__group_to_table(parent=parent, group=group)
 
 
 if  __name__ == '__main__':
@@ -228,13 +241,17 @@ if  __name__ == '__main__':
 
 
     def review_deletion():
-        test_data = ['a', 'b', 'c', 'd', 'e', 'f']
+        test_data = ['a', 'b', 'c', 'd', 'e', 'f', ['x', 'y', 'z']]
         ra = Ref(test_data, 0)
         rb = Ref(test_data, 1)
         rc = Ref(test_data, 2)
         rd = Ref(test_data, 3)
         re = Ref(test_data, 4)
         rf = Ref(test_data, 5)
+        rxyz = Ref(test_data, 6)
+        rx = Ref(test_data[6], 0)
+        ry = Ref(test_data[6], 1)
+        rz = Ref(test_data[6], 2)
         data = {
             1: DataRow(value=ra, vtype='audio', name='A', parent=8),
             2: DataRow(value=rb, vtype='audio', name='B', parent=8),
@@ -244,36 +261,58 @@ if  __name__ == '__main__':
             6: DataRow(value=rf, vtype='photo', name='F', parent=7),
             7: DataRow(value=[5, 6], vtype='photo', name='EF', parent=9),
             8: DataRow(value=[1, 2], vtype='audio', name='AB'),
-            9: DataRow(value=[3, 4, 7], vtype='photo', name='CD')
+            9: DataRow(value=[3, 4, 7], vtype='photo', name='CD', parent=10),
+            10: DataRow(value=[9], vtype='other', name='xCD'),
+            11: DataRow(value=rxyz, vtype='doc', name='xyz'),
+            12: DataRow(value=rx, vtype='doc', name='x', parent=11),
+            13: DataRow(value=ry, vtype='doc', name='y', parent=11),
+            14: DataRow(value=rz, vtype='doc', name='z', parent=11),
         }
 
         relations = {
             7: [5, 6],
             8: [1, 2],
-            9: [3, 4, 7]
+            9: [3, 4, 7],
+            10: [9],
+            11: [12, 13, 14]
         }
 
+        def null(data_table:dict, id:int):
+            def _null_value(id:int):
+                row = data_table.get(id)
+                ids = []
+                if isinstance(row.value, Ref):
+                    if isinstance(row.value.val, list):
+                        ids = relations.get(id, []).copy()
+                    else:
+                        row.value.null()
+                elif isinstance(row.value, list):
+                    ids = row.value.copy()
 
-        def null_value(data_table:dict, id:int):
-            row = data_table.get(id)
-            if isinstance(row.value, Ref):
-                row.value.null()
-            elif isinstance(row.value, list):
-                for elem_id in row.value:
-                    null_value(data_table, elem_id)
-            row.value = None
-            null_relations(id, row.parent)
+                if ids:
+                    for elem_id in ids:
+                        _null_value(elem_id)
 
+                if row.parent:
+                    row.value = None
 
-        def null_relations(id:int, parent_id:int=None):
-            if relations.get(id):
-                relations[id] = []
-            if parent_id:
-                items = relations.get(parent_id)
-                items.remove(id)   
+            def _null_relations(id:int):
+                parent_id = data_table.get(id).parent
+                if relations.get(id):
+                    ids = relations[id].copy()
+                    for elem_id in ids:
+                        _null_relations(elem_id)
+                if parent_id:
+                    items = relations.get(parent_id)
+                    items.remove(id)
 
-        null_value(data, 7)
+            _null_value(id)
+            _null_relations(id)
+
+        null(data, 11)
         for key, row in data.items():
             print(f'{key}: {row.value}')
         print('test_data: ',test_data)
         print('ralations', relations)
+
+    review_deletion()
