@@ -211,7 +211,7 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
     send_multymessage(user.id, context)
 
 
-@bot.message_handler(commands=['delete'], )
+@bot.message_handler(commands=['delete', BUTTONS['delete']], )
 def delete(message, user: User = None, data=None):
     user = get_user(message)
     kwargs = {'from': 'delete'}

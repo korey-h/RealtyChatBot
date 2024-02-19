@@ -25,6 +25,15 @@ def make_welcome_kbd(*args, **kwargs):
     return make_base_kbd(buttons_name, row_width)
 
 
+def make_upd_kbd(*args, **kwargs):
+    row_width = 3
+    buttons_name = name_to_cmd(
+        [BUTTONS['cancel_this'],
+         BUTTONS['delete'],
+         BUTTONS['apply'], ]
+        )
+    return make_base_kbd(buttons_name, row_width)
+
 def cancel_this_kbd(*args, **kwargs):
     buttons_name = name_to_cmd([
          BUTTONS['cancel_this']

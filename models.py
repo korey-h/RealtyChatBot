@@ -42,10 +42,8 @@ class RegistrProces:
     _stop_text = 'to registration'
     _prior_messages = {
         0: welcome_mess,
-        1: [{'text': ADV_MESSAGE['mess_ask_space'],
-            'kbd_maker': sb.cancel_this_kbd}],
-        2: [{'text': ADV_MESSAGE['mess_ask_flour'],
-            'kbd_maker': sb.cancel_this_kbd}],
+        1: [{'text': ADV_MESSAGE['mess_ask_space']}],
+        2: [{'text': ADV_MESSAGE['mess_ask_flour']}],
         3: [{'text': ADV_MESSAGE['mess_ask_material']}],
         4: [{'text': ADV_MESSAGE['mess_ask_address']}],
         5: [{'text': ADV_MESSAGE['mess_ask_year']}],
@@ -306,7 +304,9 @@ class RegUpdateProces(RegistrProces):
 
     welcome_mess = [
         {'text': ADV_MESSAGE['mess_welcome_upd'],
-         'kbd_maker': sb.welcome_upd_butt}]
+         'kbd_maker': sb.welcome_upd_butt},
+        {'text': ADV_MESSAGE['about_kbd'],
+         'kbd_maker': sb.make_upd_kbd}]
 
     def __init__(self, blank: dict) -> None:
         super().__init__()
@@ -414,20 +414,20 @@ class RegUpdateProces(RegistrProces):
         return self.step
     
     def delete(self):
+        if self.step == 0:
+            return self.mess_wrapper(ADV_MESSAGE['select_del'])
         row = self.butt_table.get(self.step)
         if row.required:
             return self.mess_wrapper(ADV_MESSAGE['non_delete'])
         elif isinstance(row.value, list):
             if self.del_is_conf:
                 self.del_is_conf = False
-            else:
-                self.del_is_conf = True
-        if self.del_is_conf:
-            self.butt_table.null(self.step)
-            self._set_nondeleted_step() 
-            return self.mess_wrapper(ADV_MESSAGE['del_complete'])
-        else:
-            return self.mess_wrapper(ADV_MESSAGE['del_confirm'])
+                return self.mess_wrapper(ADV_MESSAGE['del_confirm'])
+        self.del_is_conf = True        
+        self.butt_table.null(self.step)
+        self._set_nondeleted_step() 
+        return self.mess_wrapper(ADV_MESSAGE['del_complete'])
+            
 
 class User:
     adv_proces_class = RegistrProces
