@@ -58,12 +58,18 @@ def farther_keyboard(obj, *args, **kwargs):
             {'name': 'farther', 'pld': None}))
     return InlineKeyboardMarkup().add(pass_button)
 
+
 def send_btn(*args, **kwargs):
-    pass_button = InlineKeyboardButton(
+    send_button = InlineKeyboardButton(
         text=BUTTONS['send_adv'],
         callback_data=json.dumps(
             {'name': 'send', 'pld': KEYWORDS['send_btn']}))
-    return InlineKeyboardMarkup().add(pass_button)
+
+    upd_button = InlineKeyboardButton(
+        text=BUTTONS['redact'],
+        callback_data=json.dumps(
+            {'name': 'redact', 'pld': KEYWORDS['redact_btn']}))
+    return InlineKeyboardMarkup().add(send_button, upd_button)
 
 
 def welcome_upd_butt(obj, *args, **kwargs):

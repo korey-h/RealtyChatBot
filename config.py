@@ -7,6 +7,7 @@ BUTTONS = {
     'delete': 'Удалить',
     'apply': 'Применить',
     'pass': 'Пропустить',
+    'redact': 'Редактировать',
     'farther': 'Далее',
     'send_adv': 'Разместить',
     'audio': 'Аудио',
@@ -114,12 +115,13 @@ ADV_BLANK_WORDS = {
 
 
 ALLOWED_BUTTONS = {
-    'advert_forming': ['send', 'pass', 'farther'],
+    'advert_forming': ['send', 'pass', 'farther', 'redact'],
     'advert_update':  ['send', 'pass', 'farther', 'update'],
 }
 
 KEYWORDS = {
-    'send_btn': 'send'
+    'send_btn': 'send',
+    'redact_btn': 'redact',
 }
 
 KEYWORDS_MESS = {

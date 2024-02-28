@@ -2,6 +2,7 @@ import base64
 import datetime as dt
 import hashlib
 
+from copy import copy
 from typing import List
 
 import buttons as sb
@@ -19,6 +20,7 @@ class RegistrProces:
         self.race = None
         self.id = None
         self._finish_step = len(self._step_actions)
+        self.send_step = self._finish_step - 2
         self.is_active = True
         self.errors = {}
         self._fix_list = [] # сохраняет номер шага и текст ошибки
@@ -221,7 +223,6 @@ class RegistrProces:
 
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
-        # keyboard = sb.adv_update_button(self)
         self.is_active = False
         return self.mess_wrapper([
             [ADV_MESSAGE['mess_adv_send'], sb.make_welcome_kbd()],
@@ -268,6 +269,14 @@ class RegistrProces:
             return [value]
         return [{'text': text, 'reply_markup': keyboard}]
 
+    def unwrapp_blank(self):
+        new = {}
+        for key, value in self.adv_blank.items():
+            if isinstance(value, dict):
+                value = value.get('text')
+            new.update({key: value})
+        return new       
+
     def _clipper(self, data: str) -> dict:
         data = data.strip()
         return {'data': data, 'error': None}
@@ -312,7 +321,7 @@ class RegUpdateProces(RegistrProces):
         super().__init__()
         validators = self._all_validators()
         messages = self._all_prior_mess()
-        self.adv_blank = blank.copy()
+        self.adv_blank = copy(blank)
         self.butt_table = DataTable(self.adv_blank, validators, messages)
         self._prior_messages[0] = self.welcome_mess
         self.del_is_conf = True
@@ -427,7 +436,19 @@ class RegUpdateProces(RegistrProces):
         self.butt_table.null(self.step)
         self._set_nondeleted_step() 
         return self.mess_wrapper(ADV_MESSAGE['del_complete'])
-            
+   
+    def wrapp_blank(self):
+        new = {}
+        for key, value in self.adv_blank.items():
+            if isinstance(value, (str, int)):
+                value = {
+                    'content_type': 'text',
+                    'text': str(value)}
+            elif isinstance(value, list):
+                value = value.copy()
+            new.update({key: value})
+        return new             
+
 
 class User:
     adv_proces_class = RegistrProces
@@ -437,6 +458,7 @@ class User:
         self.id = id
         self._commands = []
         self.adv_proces = None
+        self.upd_proces = None
 
     def is_stack_empty(self):
         return len(self._commands) == 0
@@ -482,10 +504,17 @@ class User:
         return None
 
     def update_advert(self):
-        from fixtures import test_blank
-        self.adv_proces = self.adv_update_class(test_blank())
+        # from fixtures import test_blank
+        # blank = test_blank()
+        blank = self.adv_proces.unwrapp_blank()
+        self.upd_proces = self.adv_update_class(blank)
         return None
 
     def stop_advert(self):
         self.adv_proces = None
+        return None
+
+    def stop_upd(self):
+        self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
+        self.upd_proces = None
         return None

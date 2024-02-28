@@ -157,6 +157,10 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
         if not is_buttons_alowwed(self_name, data, user):
             return
         data = data['pld'] if 'pld' in data.keys() else data
+        if data == 'redact' and (
+                user.adv_proces.step == user.adv_proces.send_step):
+            redaction(message, user, **{'from':self_name})
+            return
     crnt_step = user.adv_proces.step
     if (data is None and crnt_step > 0 and
             crnt_step < user.adv_proces._finish_step):
@@ -181,7 +185,7 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
     user = user if user else get_user(message)
     called_from = kwargs.get('from')
 
-    if not user.adv_proces:
+    if not user.upd_proces:
         user.update_advert()
         user.set_cmd_stack((self_name, redaction))
 
@@ -191,23 +195,22 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
             text=MESSAGES['adv_always_on']
             )
     elif called_from == 'delete':
-        context = user.adv_proces.delete()
+        context = user.upd_proces.delete()
         send_multymessage(user.id, context)
         return
 
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
             return
-        context = user.adv_proces.exec(data)
+        context = user.upd_proces.exec(data)
     else:
-        context = user.adv_proces.exec(data, mess_obj=message)
+        context = user.upd_proces.exec(data, mess_obj=message)
     if not context:
         return
-    if not user.adv_proces.is_active:
-        mess = user.adv_proces.adv_f_send
-        adv_sender(mess)
-        user.stop_advert()
+    if not user.upd_proces.is_active:
+        user.stop_upd()
         user.cmd_stack_pop()
+        context = user.adv_proces.repeat_last_step()
     send_multymessage(user.id, context)
 
 
