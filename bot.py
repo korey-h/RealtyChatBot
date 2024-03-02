@@ -119,6 +119,10 @@ def cancel_this(message):
     cmd = up_stack['cmd']
     if cmd == registration:
         user.stop_advert()
+    elif cmd == redaction:
+        context = user.adv_proces.repeat_last_step()
+        send_multymessage(user.id, context)
+        return
     all_comm = [cmd.__doc__, ]
     while up_stack:
         cmd = up_stack['cmd']
@@ -132,6 +136,17 @@ def cancel_this(message):
         user.id,
         MESSAGES['mess_cancel_this'].format(out),
         reply_markup=sb.make_welcome_kbd())
+
+
+@bot.message_handler(commands=[BUTTONS['apply']])
+def apply_update(message):
+    user = get_user(message)
+    cmd = user.get_cmd_stack()['cmd']
+    if cmd == redaction:
+        user.stop_upd()
+        user.cmd_stack_pop()
+        context = user.adv_proces.repeat_last_step()
+    send_multymessage(user.id, context)
 
 
 @bot.message_handler(commands=[BUTTONS['make_advert'], 'create'], )
@@ -207,10 +222,6 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
         context = user.upd_proces.exec(data, mess_obj=message)
     if not context:
         return
-    if not user.upd_proces.is_active:
-        user.stop_upd()
-        user.cmd_stack_pop()
-        context = user.adv_proces.repeat_last_step()
     send_multymessage(user.id, context)
 
 

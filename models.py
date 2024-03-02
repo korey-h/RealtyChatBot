@@ -19,8 +19,8 @@ class RegistrProces:
         self.step = 0
         self.race = None
         self.id = None
-        self._finish_step = len(self._step_actions)
-        self.send_step = self._finish_step - 2
+        self._finish_step = len(self._step_actions) - 1
+        self.send_step = self._finish_step - 1
         self.is_active = True
         self.errors = {}
         self._fix_list = [] # сохраняет номер шага и текст ошибки
@@ -251,10 +251,13 @@ class RegistrProces:
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
             requirement = self._step_actions.get(value)
             if not requirement or not requirement['required']:
-                pre_mess.append({
+                pre_mess_1 = pre_mess.pop()
+                pre_mess_2 = {
                     'text': ADV_MESSAGE['pass_step'],
                     'reply_markup': sb.pass_keyboard()
-                    }) 
+                    }
+                new = sb.glue_pre_mess(pre_mess_1, pre_mess_2)
+                pre_mess.append(new)
             return pre_mess
 
         elif isinstance(value, (list, tuple)):

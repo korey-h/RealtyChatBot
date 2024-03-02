@@ -86,6 +86,7 @@ def welcome_upd_butt(obj, *args, **kwargs):
         buttons.append(button)
     return InlineKeyboardMarkup().add(*buttons)
 
+
 def elements_butt(obj, *args, **kwargs):
     row = obj.butt_table.get(obj.step)
     if (not isinstance(row.value, list) and
@@ -109,4 +110,37 @@ def elements_butt(obj, *args, **kwargs):
             {'name': 'update', 'pld': el.id}))
         buttons.append(button)
     return InlineKeyboardMarkup().add(*buttons)
-     
+
+
+def glue_keyboards(*args):
+    keys = []
+    for kbd in args:
+        if kbd is None:
+            continue
+        new = unpuck_kbd(kbd)
+        keys.extend(new)
+    if keys:
+        return InlineKeyboardMarkup().add(*keys)
+
+
+def unpuck_kbd(kbd):
+    keys = []
+    if isinstance(kbd, list):
+        for key in kbd:
+            new = unpuck_kbd(key)
+            keys.extend(new)
+    else:
+        keys.append(kbd)
+    return keys
+
+def glue_pre_mess(mess_1:dict, mess_2:dict):
+    text = mess_1['text'] + '\n' + mess_2['text']
+    reply_markup_1 = mess_1.get('reply_markup')
+    reply_markup_2 = mess_2.get('reply_markup')
+    reply_markup = glue_keyboards(
+        reply_markup_1.keyboard if reply_markup_1 else None,
+        reply_markup_2.keyboard if reply_markup_2 else None,
+        )
+
+    return {'text': text, 'reply_markup': reply_markup}
+
