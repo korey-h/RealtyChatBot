@@ -53,7 +53,8 @@ class RegistrProces:
         7: [{'text': ADV_MESSAGE['mess_ask_price']}],
         8: [{'text': ttg.text_add_foto,
             'kbd_maker': sb.farther_keyboard}],
-        9: [{'text': ADV_MESSAGE['mess_confirm_adv']},
+        9: [{'text': ADV_MESSAGE['mess_confirm_adv'],
+            'kbd_maker': sb.cancel_this_kbd},
             {'text': adv_former, 'kbd_maker': sb.send_btn}],
         10: [{'text': _stop_text}],
 
@@ -246,7 +247,8 @@ class RegistrProces:
                 if isinstance(text, (list, tuple)):
                     for elem in text:
                         pre_mess.append(elem)
-                    pre_mess.append({'text': '-->', 'reply_markup': keyboard})
+                    # pre_mess.append({'text': '-->', 'reply_markup': keyboard})
+                    pre_mess[-1]['reply_markup'] = keyboard
                 else:
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
             requirement = self._step_actions.get(value)
