@@ -78,10 +78,10 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
         if not value:
             continue
         if isinstance(value, dict):
-            obj.adv_f_send.append({'text': template.format(ABW[key], ':')})
+            obj.adv_f_send.append({'text': template.format(ABW[key], ' ')})
             obj.adv_f_send.append(value)
         elif isinstance(value, (list, tuple)):
-            obj.adv_f_send.append({'text': template.format(ABW[key], ':')})
+            obj.adv_f_send.append({'text': template.format(ABW[key], ' ')})
             out = media_sorter(value)
             if not out:
                 obj.adv_f_send.append({'text': 'пусто'})

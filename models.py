@@ -2,7 +2,7 @@ import base64
 import datetime as dt
 import hashlib
 
-from copy import copy
+from copy import copy, deepcopy
 from typing import List
 
 import buttons as sb
@@ -14,35 +14,11 @@ from utils import adv_former
 
 
 class RegistrProces:
-
-    def __init__(self) -> None:
-        self.step = 0
-        self.race = None
-        self.id = None
-        self._finish_step = len(self._step_actions) - 1
-        self.send_step = self._finish_step - 1
-        self.is_active = True
-        self.errors = {}
-        self._fix_list = [] # сохраняет номер шага и текст ошибки
-
-        self.adv_blank = {
-            'space': None,
-            'flour': None,
-            'material': '',
-            'address': '',
-            'year': None,
-            'district': '',
-            'price': None,
-            'photo': [],
-        }
-        self.adv_f_send = '-'
-        self.adv_blank_id = None
-
     welcome_mess = [
         {'text': ADV_MESSAGE['mess_welcome_create'],
          'kbd_maker': sb.cancel_this_kbd}]
     _stop_text = 'to registration'
-    _prior_messages = {
+    _base_messages = {
         0: welcome_mess,
         1: [{'text': ADV_MESSAGE['mess_ask_space']}],
         2: [{'text': ADV_MESSAGE['mess_ask_flour']}],
@@ -78,6 +54,30 @@ class RegistrProces:
         9: {'keyword': KEYWORDS['send_btn'], 'source': 'button'}
     }
 
+    def __init__(self) -> None:
+        self.step = 0
+        self.race = None
+        self.id = None
+        self._finish_step = len(self._step_actions) - 1
+        self.send_step = self._finish_step - 1
+        self.is_active = True
+        self.errors = {}
+        self._fix_list = [] # сохраняет номер шага и текст ошибки
+
+        self.adv_blank = {
+            'space': None,
+            'flour': None,
+            'material': '',
+            'address': '',
+            'year': None,
+            'district': '',
+            'price': None,
+            'photo': [],
+        }
+        self.adv_f_send = '-'
+        self.adv_blank_id = None
+        self._prior_messages = deepcopy(self._base_messages)
+   
     def _get_step_info(self, step: int) -> dict:
         return self._step_actions.get(step)
 
@@ -128,7 +128,7 @@ class RegistrProces:
 
         def document(mess_obj):
             return {
-                'document': mess_obj.document,
+                'document': mess_obj.document.file_id,
                 'caption': mess_obj.caption}
 
         def text(mess_obj):
@@ -247,8 +247,10 @@ class RegistrProces:
                 if isinstance(text, (list, tuple)):
                     for elem in text:
                         pre_mess.append(elem)
-                    # pre_mess.append({'text': '-->', 'reply_markup': keyboard})
-                    pre_mess[-1]['reply_markup'] = keyboard
+                    if pre_mess[-1].get('content_type') != 'media':
+                        pre_mess[-1]['reply_markup'] = keyboard
+                    else:
+                        pre_mess.append({'text': 'vvv', 'reply_markup': keyboard})
                 else:
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
             requirement = self._step_actions.get(value)
@@ -321,13 +323,14 @@ class RegUpdateProces(RegistrProces):
          'kbd_maker': sb.welcome_upd_butt},
         {'text': ADV_MESSAGE['about_kbd'],
          'kbd_maker': sb.make_upd_kbd}]
-
+    
     def __init__(self, blank: dict) -> None:
         super().__init__()
         validators = self._all_validators()
         messages = self._all_prior_mess()
         self.adv_blank = copy(blank)
         self.butt_table = DataTable(self.adv_blank, validators, messages)
+        # self._prior_messages = deepcopy(self._prior_messages)
         self._prior_messages[0] = self.welcome_mess
         self.del_is_conf = True
     
@@ -464,6 +467,7 @@ class User:
         self._commands = []
         self.adv_proces = None
         self.upd_proces = None
+        self.storage = []
 
     def is_stack_empty(self):
         return len(self._commands) == 0
@@ -498,6 +502,7 @@ class User:
     def cancel_all(self):
         self.clear_stack()
         self.adv_proces = None
+        self.upd_proces = None
 
     def cmd_stack_pop(self):
         if len(self._commands) > 0:

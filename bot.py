@@ -8,11 +8,13 @@ from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
 from telebot import TeleBot
+from telebot.types import (InputMediaAudio, InputMediaDocument, 
+                            InputMediaPhoto, InputMediaVideo)
 
 import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
-from models import User
+from models import User, RegistrProces
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -23,7 +25,8 @@ LET_VIEW_EXS = True
 
 my_chat_id = os.getenv('CHAT_ID')
 my_thread_id = os.getenv('MESSAGE_THREAD_ID')
-bot = TeleBot(os.getenv('TOKEN'))
+token = os.getenv('TOKEN')
+bot = TeleBot(token)
 SEND_METHODS = {
         'audio': bot.send_audio,
         'photo': bot.send_photo,
@@ -71,13 +74,16 @@ def try_exec_stack(message, user: User, data, **kwargs):
 
 
 def send_multymessage(user_id, pre_mess: List[dict]):
+    sent_messages = []
     for mess_data in pre_mess:
         content_type = mess_data.pop('content_type', None) or 'text'
         if content_type not in SEND_METHODS.keys():
             content_type = 'text'
         sender = SEND_METHODS[content_type]
-        sender(user_id, **mess_data)
+        sent_mess = sender(user_id, **mess_data)
+        sent_messages.append(sent_mess)
         mess_data.update({'content_type': content_type})
+    return sent_messages
 
 
 def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
@@ -94,6 +100,51 @@ def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
         bot.send_message(user.id, text=text)
         return False
     return True
+
+
+@bot.message_handler(commands=['try_edit'])
+def try_edit(message, **kwargs):
+    media_class = {
+        'audio': InputMediaAudio,
+        'document': InputMediaDocument,
+        'photo':  InputMediaPhoto,
+        'video': InputMediaVideo
+    }
+    self_name = 'try_edit'
+    user = get_user(message)
+    if user.is_stack_empty() or user.cmd_stack['cmd_name'] != self_name:
+        user.cmd_stack = (self_name, try_edit)
+        bot.send_message(user.id, text='высылай медиа!')
+        return
+    if len(user.storage) < 4:
+        data = RegistrProces()._pars_mess_obj(message)
+        user.storage.append(data)
+    else:
+        sent_messages = send_multymessage(user.id, user.storage)
+        time.sleep(2)
+
+        for i in range(len(user.storage)):
+            mess_sent = sent_messages[len(user.storage) - i - 1]
+            con_type = user.storage[i]['content_type']
+            media_id = user.storage[i][con_type]
+            media = media_class[con_type](media=media_id)
+            if mess_sent.message_id != sent_messages[i].message_id:
+                bot.edit_message_media(media, user.id, mess_sent.message_id)
+            time.sleep(1)
+        time.sleep(3)
+        mess_for_del = sent_messages[0]
+        bot.delete_message(user.id, mess_for_del.message_id)
+        time.sleep(3)
+        # mess_for_cor = sent_messages[1]
+        # text_correct = 'новый текст'
+        # bot.edit_message_text(text_correct, user.id, mess_for_cor.message_id)
+    # text_orig = 'исходное сообщение'
+    # text_correct = 'новый текст'
+
+    # mess_sended = bot.send_message(user.id, text_orig)
+    # bot.send_message(user.id, text_orig)
+    # time.sleep(60)
+    # bot.edit_message_text(text_correct, user.id, mess_sended.message_id)
 
 
 @bot.message_handler(commands=['start'])
@@ -135,6 +186,15 @@ def cancel_this(message):
     bot.send_message(
         user.id,
         MESSAGES['mess_cancel_this'].format(out),
+        reply_markup=sb.make_welcome_kbd())
+
+
+@bot.message_handler(commands=['break'])
+def cancel_all(message):
+    user = get_user(message)
+    user.cancel_all()
+    bot.send_message(
+        user.id, MESSAGES['cancel_all'],
         reply_markup=sb.make_welcome_kbd())
 
 
@@ -239,7 +299,7 @@ def text_router(message):
     try_exec_stack(message, user, data)
 
 
-@bot.message_handler(content_types=['photo', ])
+@bot.message_handler(content_types=['photo', 'audio', 'document'])
 def media_router(message):
     user = get_user(message)
     try_exec_stack(message, user, 'photo')
