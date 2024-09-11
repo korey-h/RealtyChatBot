@@ -56,24 +56,30 @@ def media_sorter(items: List[dict]) -> List[dict]:
 
 def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
     adv_blank: dict = obj.adv_blank
-    separately = []
+    media_content = []
+    single_texts = []
     obj.adv_f_send = []
     text = ''
     for key, value in adv_blank.items():
         if isinstance(value, (list, tuple)):
-            separately.append({key:value})
+            media_content.append({key:value})
             continue
         elif isinstance(value, dict):
             if value['content_type'] == 'text':
-                value = value['text']
+                if key in obj.title_mess_content:
+                    value = value['text']
+                else:
+                    value = '-' if not value else str(value)
+                    single_texts.append({key:value})
             else:
-                separately.append({key:value})
+                media_content.append({key:value})
                 continue     
         value = '-' if not value else str(value)
         text += template.format(ABW[key], value)
     obj.adv_f_send.append({'text': text})
-
-    for unit in separately:
+    obj.adv_f_send.extend(single_texts)
+    
+    for unit in media_content:
         key, value = list(unit.items())[0]
         if not value:
             continue
@@ -100,3 +106,20 @@ def review_elem(obj) -> dict:
     elif isinstance(value, dict):
         mess = value
     return mess
+
+
+def get_or_create(session, model, create_params: dict,
+                  filter_params: dict = {}):
+    if not filter_params:
+        filter_params = create_params
+    instance = session.query(model).filter_by(**filter_params).first()
+    if instance:
+        return instance
+    else:
+        instance = model(**create_params)
+        session.add(instance)
+        session.commit()
+        return instance
+
+def get_message_type(message_obj) -> str:
+    pass

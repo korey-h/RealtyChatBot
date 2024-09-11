@@ -1,25 +1,31 @@
+import db_models
 import json
 import logging
 import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+import sqlite3
 import threading
 import time
-from typing import List
-from logging.handlers import RotatingFileHandler
 
+from datetime import datetime as dt
 from dotenv import load_dotenv
+from logging.handlers import RotatingFileHandler
 from telebot import TeleBot
 from telebot.types import (InputMediaAudio, InputMediaDocument, 
                             InputMediaPhoto, InputMediaVideo)
+from typing import List
 
 import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
+from utils import get_or_create
 
 if os.path.exists('.env'):
     load_dotenv('.env')
-with open('about.txt', encoding='utf-8') as f:
-    ABOUT = f.read()
+else:
+    print('файл .env с ключами доступа к боту, базе данны и т.п. не найден.')
 
 LET_VIEW_EXS = True
 
@@ -27,6 +33,8 @@ my_chat_id = os.getenv('CHAT_ID')
 my_thread_id = os.getenv('MESSAGE_THREAD_ID')
 token = os.getenv('TOKEN')
 bot = TeleBot(token)
+DB_NAME = os.getenv('DB_NAME')
+
 SEND_METHODS = {
         'audio': bot.send_audio,
         'photo': bot.send_photo,
@@ -39,7 +47,6 @@ SEND_METHODS = {
         'sticker': bot.send_sticker,
         'media': bot.send_media_group,
         }
-users = {}
 
 logger = logging.getLogger(__name__)
 handler = RotatingFileHandler(
@@ -50,9 +57,21 @@ handler.setFormatter(formatter)
 
 err_info = ''
 
+users = {}
+with open('about.txt', encoding='utf-8') as f:
+    ABOUT = f.read()
+
+if not os.path.isfile(DB_NAME):
+    connection = sqlite3.connect(DB_NAME)
+    connection.close()
+
+engine = create_engine('sqlite:///'+DB_NAME, echo=True)
+SESSION = Session(engine)
+
 def get_user(message) -> User:
     user_id = message.chat.id
-    return users.setdefault(user_id, User(id=user_id))
+    name = message.chat.username
+    return users.setdefault(user_id, User(user_id, name))
 
 
 def try_exec_stack(message, user: User, data, **kwargs):
@@ -89,7 +108,57 @@ def send_multymessage(user_id, pre_mess: List[dict]):
 def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
     for item in mess:
         item.update({'message_thread_id': message_thread_id})
-    send_multymessage(chat_id, mess)
+    return send_multymessage(chat_id, mess)
+
+
+def adv_to_db(user: User, session: Session, sended_mess_objs: list):
+    db_user = get_or_create(
+        session,
+        db_models.User,
+        create_params={'tg_id': user.id, 'name': user.name},
+        filter_params={'tg_id': user.id})
+    adv_blank = user.adv_proces.adv_blank
+    title_mess_content = user.adv_proces.title_mess_content
+    to_title_mess = {}
+    objs_for_db = []
+    for key in adv_blank.keys():
+        if key in title_mess_content:
+            data_key = adv_blank[key]['content_type']
+            data = adv_blank[key][data_key]
+            to_title_mess.update({key: data})
+    
+    current_datetime = dt.now()
+    sended_title_mess = sended_mess_objs[0]
+    title_message = db_models.TitleMessages(
+        tg_mess_id = sended_title_mess.id,
+        time=current_datetime,
+        mess_type='text',
+        user_id = db_user.id,
+        **to_title_mess
+    )
+    session.add(title_message)
+    session.commit()
+
+    def _add_additional_message(mess_obj, conteiner:list):
+        additional_message = db_models.AdditionalMessages(
+            tg_mess_id = mess_obj.id,
+            time=current_datetime,
+            mess_type=mess_obj.content_type,
+            caption=mess_obj.caption,
+            title_message_id=title_message.id
+        )
+        conteiner.append(additional_message)      
+
+    if len(sended_mess_objs) > 1:
+        for mess_obj in sended_mess_objs[1: ]:
+            if not isinstance(mess_obj, list):
+                _add_additional_message(mess_obj, objs_for_db)
+                continue
+            for sub_mess in mess_obj:
+                _add_additional_message(sub_mess, objs_for_db)
+
+    session.add_all(objs_for_db)
+    session.commit()
 
 
 def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
@@ -103,6 +172,7 @@ def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
 
 
 @bot.message_handler(commands=['try_edit'])
+#тестовая функция для проверки возможностей по редактированию сообщений
 def try_edit(message, **kwargs):
     media_class = {
         'audio': InputMediaAudio,
@@ -246,7 +316,8 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
         return
     if not user.adv_proces.is_active:
         mess = user.adv_proces.adv_f_send
-        adv_sender(mess)
+        sended_mess_objs = adv_sender(mess)
+        adv_to_db(user, SESSION, sended_mess_objs)
         user.stop_advert()
         user.cmd_stack_pop()
     send_multymessage(user.id, context)
@@ -335,6 +406,8 @@ if __name__ == '__main__':
     develop_id = os.getenv('DEVELOP_ID')
     t1 = threading.Thread(target=err_informer, args=[develop_id])
     t1.start()
+
+    # db_user = get_or_create(SESSION, db_models.User, {'tg_id': 13333, 'name': "mey"})
 
     while True:
         try:

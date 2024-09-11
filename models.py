@@ -74,6 +74,10 @@ class RegistrProces:
             'price': None,
             'photo': [],
         }
+        self.title_mess_content = [
+            'space', 'flour', 'material', 'address','year',
+            'district','price'
+        ]
         self.adv_f_send = '-'
         self.adv_blank_id = None
         self._prior_messages = deepcopy(self._base_messages)
@@ -174,6 +178,13 @@ class RegistrProces:
     def pass_step(self):
         if self.is_act_required():
             return self.mess_wrapper(ADV_MESSAGE['step_is_required'])
+        act = self._get_step_info(self.step)
+        entry = act['name']
+        if not isinstance(self.adv_blank[entry], (list, dict)):
+            self.adv_blank[entry] = {
+                'content_type': 'text',
+                'text': ''
+            }
         self.step += 1
         return self.mess_wrapper(self.step)
 
@@ -462,8 +473,9 @@ class User:
     adv_proces_class = RegistrProces
     adv_update_class = RegUpdateProces
 
-    def __init__(self, id):
+    def __init__(self, id, name):
         self.id = id
+        self.name = name
         self._commands = []
         self.adv_proces = None
         self.upd_proces = None
