@@ -134,6 +134,9 @@ venv.bak/
 alembic/
 alembic.ini
 
+# Database files
+*.db
+
 # Spyder project settings
 .spyderproject
 .spyproject

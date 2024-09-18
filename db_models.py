@@ -67,3 +67,5 @@ class AdditionalMessages(Base):
     title_message: Mapped["TitleMessages"] = relationship(
         back_populates='additional_messages'
         )
+    sequence_num: Mapped[int]
+    enclosure_num: Mapped[int]

@@ -5,4 +5,5 @@ pyTelegramBotAPI==4.14.0
 python-dotenv==0.21.1
 requests==2.31.0
 urllib3==2.0.5
-sqlalchemy=2.0.32
+sqlalchemy==2.0.32
+alembic==1.13.2

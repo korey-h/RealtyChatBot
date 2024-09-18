@@ -34,6 +34,7 @@ my_thread_id = os.getenv('MESSAGE_THREAD_ID')
 token = os.getenv('TOKEN')
 bot = TeleBot(token)
 DB_NAME = os.getenv('DB_NAME')
+DB_PATH = os.getenv('DB_PATH')
 
 SEND_METHODS = {
         'audio': bot.send_audio,
@@ -65,7 +66,7 @@ if not os.path.isfile(DB_NAME):
     connection = sqlite3.connect(DB_NAME)
     connection.close()
 
-engine = create_engine('sqlite:///'+DB_NAME, echo=True)
+engine = create_engine('sqlite:///'+DB_PATH+DB_NAME, echo=True)
 SESSION = Session(engine)
 
 def get_user(message) -> User:
@@ -139,24 +140,31 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
     session.add(title_message)
     session.commit()
 
-    def _add_additional_message(mess_obj, conteiner:list):
+    def _add_additional_message(mess_obj, conteiner:list,
+                                sequence_num:int, enclosure_num:int):
         additional_message = db_models.AdditionalMessages(
             tg_mess_id = mess_obj.id,
             time=current_datetime,
             mess_type=mess_obj.content_type,
             caption=mess_obj.caption,
-            title_message_id=title_message.id
+            title_message_id=title_message.id,
+            sequence_num=sequence_num,
+            enclosure_num=enclosure_num,
         )
         conteiner.append(additional_message)      
-
+    sequence_num = 0    
     if len(sended_mess_objs) > 1:
         for mess_obj in sended_mess_objs[1: ]:
+            enclosure_num = 0
             if not isinstance(mess_obj, list):
-                _add_additional_message(mess_obj, objs_for_db)
+                _add_additional_message(mess_obj, objs_for_db,
+                                        sequence_num, enclosure_num)
                 continue
             for sub_mess in mess_obj:
-                _add_additional_message(sub_mess, objs_for_db)
-
+                _add_additional_message(sub_mess, objs_for_db,
+                                        sequence_num, enclosure_num)
+                enclosure_num += 1
+            sequence_num += 1
     session.add_all(objs_for_db)
     session.commit()
 
