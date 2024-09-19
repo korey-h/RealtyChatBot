@@ -69,3 +69,12 @@ class AdditionalMessages(Base):
         )
     sequence_num: Mapped[int]
     enclosure_num: Mapped[int]
+
+
+class Adverts(Base):
+    __tablename__ = 'adverts'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    external_id: Mapped[str]
+    title_message_id: Mapped[int] = mapped_column(
+        ForeignKey('title_messages.id')
+        )

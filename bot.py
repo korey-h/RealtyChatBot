@@ -165,6 +165,10 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
                                         sequence_num, enclosure_num)
                 enclosure_num += 1
             sequence_num += 1
+    advert = db_models.Adverts(
+        external_id=user.adv_proces.adv_blank_id,
+        title_message_id=title_message.id)
+    objs_for_db.append(advert)
     session.add_all(objs_for_db)
     session.commit()
 
