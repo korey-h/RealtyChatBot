@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE,
                      MESS_TEMPLATES, MAX_IN_MEDIA)
 
@@ -94,7 +96,7 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
             else:
                 obj.adv_f_send.extend(out)
         
-    return obj.adv_f_send
+    return deepcopy(obj.adv_f_send)
 
 
 def review_elem(obj) -> dict:

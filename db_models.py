@@ -23,6 +23,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(50))
     messages: Mapped[List['TitleMessages']] = relationship(
         back_populates='user', cascade='all, delete-orphan')
+    is_admin: Mapped[bool] = mapped_column(default=False, nullable=True)
+    is_moderator: Mapped[bool] = mapped_column(default=False, nullable=True)
 
     def __repr__(self) -> str:
         return f'User: id={self.id}, name= {self.name}'
@@ -67,8 +69,8 @@ class AdditionalMessages(Base):
     title_message: Mapped["TitleMessages"] = relationship(
         back_populates='additional_messages'
         )
-    sequence_num: Mapped[int]
-    enclosure_num: Mapped[int]
+    sequence_num: Mapped[int] = mapped_column(default=0)
+    enclosure_num: Mapped[int] = mapped_column(default=0)
 
 
 class Adverts(Base):

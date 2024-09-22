@@ -236,8 +236,9 @@ class RegistrProces:
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
         self.is_active = False
+        mess = ADV_MESSAGE['mess_adv_send'].format(self.adv_blank_id)
         return self.mess_wrapper([
-            [ADV_MESSAGE['mess_adv_send'], sb.make_welcome_kbd()],
+            [mess, sb.make_welcome_kbd()],
             ])
 
     def mess_wrapper(self, value) -> List[dict]:
