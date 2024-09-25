@@ -1,16 +1,18 @@
-import db_models
 import json
 import logging
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 import sqlite3
 import threading
 import time
 
+import db_models as dbm
+import permissions as perms
+
 from datetime import datetime as dt
 from dotenv import load_dotenv
 from logging.handlers import RotatingFileHandler
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 from telebot import TeleBot
 from telebot.types import (InputMediaAudio, InputMediaDocument, 
                             InputMediaPhoto, InputMediaVideo)
@@ -115,7 +117,7 @@ def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
 def adv_to_db(user: User, session: Session, sended_mess_objs: list):
     db_user = get_or_create(
         session,
-        db_models.User,
+        dbm.User,
         create_params={'tg_id': user.id, 'name': user.name},
         filter_params={'tg_id': user.id})
     adv_blank = user.adv_proces.adv_blank
@@ -130,7 +132,7 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
     
     current_datetime = dt.now()
     sended_title_mess = sended_mess_objs[0]
-    title_message = db_models.TitleMessages(
+    title_message = dbm.TitleMessages(
         tg_mess_id = sended_title_mess.id,
         time=current_datetime,
         mess_type='text',
@@ -142,7 +144,7 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
 
     def _add_additional_message(mess_obj, conteiner:list,
                                 sequence_num:int, enclosure_num:int):
-        additional_message = db_models.AdditionalMessages(
+        additional_message = dbm.AdditionalMessages(
             tg_mess_id = mess_obj.id,
             time=current_datetime,
             mess_type=mess_obj.content_type,
@@ -165,7 +167,7 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
                                         sequence_num, enclosure_num)
                 enclosure_num += 1
             sequence_num += 1
-    advert = db_models.Adverts(
+    advert = dbm.Adverts(
         external_id=user.adv_proces.adv_blank_id,
         title_message_id=title_message.id)
     objs_for_db.append(advert)
@@ -271,7 +273,7 @@ def cancel_this(message):
         reply_markup=sb.make_welcome_kbd())
 
 
-@bot.message_handler(commands=['break'])
+@bot.message_handler(commands=['break', 'Завершить_все'])
 def cancel_all(message):
     user = get_user(message)
     user.cancel_all()
@@ -368,6 +370,48 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
     send_multymessage(user.id, context)
 
 
+@bot.message_handler(commands=['renew', BUTTONS['renew']])
+def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
+    """Поиск объявления"""
+    self_name = 'find_mess_for_renew'
+    user = user if user else get_user(message)
+    called_from = kwargs.get('from')
+
+    if not called_from:
+        if user.is_stack_empty():
+            user.set_cmd_stack(
+                {'cmd_name': self_name,
+                'cmd':find_mess_for_renew,
+                'data':{},
+                'called_by': {}})
+            return bot.send_message(
+                        user.id,
+                        text=MESSAGES['adv_search'])
+        else:
+            return bot.send_message(
+                    user.id,
+                    text=MESSAGES['cancel_other'])
+    if data is None:
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['await_search_code'])
+    advert = SESSION.query(dbm.Adverts).filter(
+                        dbm.Adverts.external_id==data).first()
+    if not advert:
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['no_adverts'])
+    
+    title_message = SESSION.query(dbm.TitleMessages).filter(
+                        dbm.TitleMessages.id==advert.title_message_id).first()
+    
+    if not perms.has_redaction_permission(title_message, user.id):
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['no_redact_permissions'])
+
+
+
 @bot.message_handler(commands=['delete', BUTTONS['delete']], )
 def delete(message, user: User = None, data=None):
     user = get_user(message)
@@ -419,7 +463,7 @@ if __name__ == '__main__':
     t1 = threading.Thread(target=err_informer, args=[develop_id])
     t1.start()
 
-    # db_user = get_or_create(SESSION, db_models.User, {'tg_id': 13333, 'name': "mey"})
+    # db_user = get_or_create(SESSION, dbm.User, {'tg_id': 13333, 'name': "mey"})
 
     while True:
         try:
