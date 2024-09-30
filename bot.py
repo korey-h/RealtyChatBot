@@ -22,7 +22,7 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
-from utils import get_or_create
+from utils import get_or_create, reconst_blank
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -144,11 +144,16 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
 
     def _add_additional_message(mess_obj, conteiner:list,
                                 sequence_num:int, enclosure_num:int):
+        mess_type=mess_obj.content_type
+        content_text = ''
+        if mess_type == 'text':
+            content_text = mess_obj.text
         additional_message = dbm.AdditionalMessages(
             tg_mess_id = mess_obj.id,
             time=current_datetime,
-            mess_type=mess_obj.content_type,
+            mess_type=mess_type,
             caption=mess_obj.caption,
+            content_text=content_text,
             title_message_id=title_message.id,
             sequence_num=sequence_num,
             enclosure_num=enclosure_num,
@@ -161,11 +166,11 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
             if not isinstance(mess_obj, list):
                 _add_additional_message(mess_obj, objs_for_db,
                                         sequence_num, enclosure_num)
-                continue
-            for sub_mess in mess_obj:
-                _add_additional_message(sub_mess, objs_for_db,
-                                        sequence_num, enclosure_num)
-                enclosure_num += 1
+            else:
+                for sub_mess in mess_obj:
+                    _add_additional_message(sub_mess, objs_for_db,
+                                            sequence_num, enclosure_num)
+                    enclosure_num += 1
             sequence_num += 1
     advert = dbm.Adverts(
         external_id=user.adv_proces.adv_blank_id,
@@ -358,6 +363,9 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
         context = user.upd_proces.delete()
         send_multymessage(user.id, context)
         return
+    
+    elif called_from == 'find_mess_for_renew':
+        user.set_cmd_stack((self_name, redaction))
 
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
@@ -404,12 +412,21 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
     
     title_message = SESSION.query(dbm.TitleMessages).filter(
                         dbm.TitleMessages.id==advert.title_message_id).first()
+    if not title_message:
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['advert_is_lost'])        
     
     if not perms.has_redaction_permission(title_message, user.id):
         return bot.send_message(
             user.id,
             text=MESSAGES['no_redact_permissions'])
-
+    
+    blank_template = RegistrProces().adv_blank.copy()
+    adv_blank, tg_mess_ids = reconst_blank(title_message, blank_template)
+    user.start_update(adv_blank, tg_mess_ids, data)
+    user.cmd_stack_pop()
+    redaction(message, user, **{'from': 'find_mess_for_renew'})
 
 
 @bot.message_handler(commands=['delete', BUTTONS['delete']], )

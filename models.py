@@ -288,9 +288,10 @@ class RegistrProces:
             return [value]
         return [{'text': text, 'reply_markup': keyboard}]
 
-    def unwrapp_blank(self):
+    def unwrapp_blank(self, blank: dict=None):
         new = {}
-        for key, value in self.adv_blank.items():
+        blank = blank if blank else self.adv_blank
+        for key, value in blank.items():
             if isinstance(value, dict):
                 value = value.get('text')
             new.update({key: value})
@@ -336,7 +337,7 @@ class RegUpdateProces(RegistrProces):
         {'text': ADV_MESSAGE['about_kbd'],
          'kbd_maker': sb.make_upd_kbd}]
     
-    def __init__(self, blank: dict) -> None:
+    def __init__(self, blank: dict, tg_mess_ids=[]) -> None:
         super().__init__()
         validators = self._all_validators()
         messages = self._all_prior_mess()
@@ -345,6 +346,7 @@ class RegUpdateProces(RegistrProces):
         # self._prior_messages = deepcopy(self._prior_messages)
         self._prior_messages[0] = self.welcome_mess
         self.del_is_conf = True
+        self.tg_mess_ids = tg_mess_ids
     
     def mess_wrapper(self, value) -> List[dict]:
         pre_mess = []
@@ -525,6 +527,12 @@ class User:
     def start_advert(self):
         self.adv_proces = self.adv_proces_class()
         return None
+    
+    def start_update(self, blank: dict, tg_mess_ids: list, adv_blank_id: str ):
+        adv_blank = self.adv_proces_class().unwrapp_blank(blank)
+        self.upd_proces = self.adv_update_class(adv_blank)
+        self.upd_proces.adv_blank_id = adv_blank_id
+        self.upd_proces.tg_mess_ids = tg_mess_ids
 
     def update_advert(self):
         # from fixtures import test_blank

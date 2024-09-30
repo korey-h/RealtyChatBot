@@ -71,6 +71,7 @@ class AdditionalMessages(Base):
         )
     sequence_num: Mapped[int] = mapped_column(default=0)
     enclosure_num: Mapped[int] = mapped_column(default=0)
+    content_text: Mapped[str] = mapped_column(String(), nullable=True)
 
 
 class Adverts(Base):
