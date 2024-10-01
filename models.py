@@ -112,7 +112,7 @@ class RegistrProces:
     def _pars_mess_obj(self, mess_obj) -> dict:
         def audio(mess_obj): 
             return {
-                'audio': mess_obj.audio,
+                'audio': mess_obj.audio.file_id,
                 'caption': mess_obj.caption}
 
         def photo(mess_obj):
@@ -122,12 +122,12 @@ class RegistrProces:
 
         def voice(mess_obj):
             return {
-                'voice': mess_obj.voice,
+                'voice': mess_obj.voice.file_id,
                 'caption': mess_obj.caption}
 
         def video(mess_obj):
             return {
-                'video': mess_obj.video,
+                'video': mess_obj.video.file_id,
                 'caption': mess_obj.caption}
 
         def document(mess_obj):
@@ -152,7 +152,7 @@ class RegistrProces:
                 'vcard': mess_obj.vcard}
 
         def sticker(mess_obj):
-            return {'sticker':mess_obj.sticker}
+            return {'sticker':mess_obj.sticker.file_id}
 
         data = {}
         con_type = mess_obj.content_type
@@ -361,12 +361,14 @@ class RegUpdateProces(RegistrProces):
                 if callable(elem):
                     pre_mess.append(elem(self))
                     continue
-
-                text = elem['text']
-                if callable(text):
-                    text = text(self)
-                maker = elem.get('kbd_maker')
-                keyboard = maker(self) if maker else None
+                elif isinstance(elem, dict):
+                    text = elem['text']
+                    if callable(text):
+                        text = text(self)
+                    maker = elem.get('kbd_maker')
+                    keyboard = maker(self) if maker else None
+                else:
+                    text = elem
                 pre_mess.append(
                     {'text': text, 'reply_markup': keyboard}
                     )
@@ -414,6 +416,9 @@ class RegUpdateProces(RegistrProces):
             pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_save']))
 
         return pre_mess
+    
+    def exec(self, data=None, mess_obj=None) -> dict:
+        return self.step_handler(data, mess_obj)
     
     def _to_name_steps(self):
         named_steps = {}
@@ -546,6 +551,7 @@ class User:
         return None
 
     def stop_upd(self):
-        self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
+        if self.adv_proces:
+            self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
         self.upd_proces = None
         return None

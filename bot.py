@@ -144,10 +144,16 @@ def adv_to_db(user: User, session: Session, sended_mess_objs: list):
 
     def _add_additional_message(mess_obj, conteiner:list,
                                 sequence_num:int, enclosure_num:int):
+        LINKED_TYPES = ('audio', 'voice', 'video', 'document', 'sticker')
         mess_type=mess_obj.content_type
         content_text = ''
         if mess_type == 'text':
             content_text = mess_obj.text
+        elif mess_type == 'photo':
+            content_text = mess_obj.photo[-1].file_id
+        elif mess_type in LINKED_TYPES:
+            content_text = getattr(mess_obj, mess_type).file_id
+
         additional_message = dbm.AdditionalMessages(
             tg_mess_id = mess_obj.id,
             time=current_datetime,
@@ -260,9 +266,17 @@ def cancel_this(message):
     if cmd == registration:
         user.stop_advert()
     elif cmd == redaction:
-        context = user.adv_proces.repeat_last_step()
-        send_multymessage(user.id, context)
+        if user.adv_proces:
+            context = user.adv_proces.repeat_last_step()
+            send_multymessage(user.id, context)
+        else:
+            bot.send_message(
+                user.id,
+                MESSAGES['mess_cancel_this'].format(up_stack['cmd_name']),
+                reply_markup=sb.make_welcome_kbd())
+        user.stop_upd()
         return
+
     all_comm = [cmd.__doc__, ]
     while up_stack:
         cmd = up_stack['cmd']

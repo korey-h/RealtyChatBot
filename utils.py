@@ -131,22 +131,20 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
             composit_items.append(key)
             continue
         if hasattr(title_message, key):
-            value = getattr(title_message, key)
+            blank_template[key] = getattr(title_message, key)
     tg_mess_ids = [title_message.tg_mess_id]
     other = composit_items[0] if composit_items else None
     if other:
         container = blank_template[other]
         additional_messages = title_message.additional_messages
         for mess in additional_messages:
-            if mess.mess_type == 'text':
-                mess_value = mess.content_text
-            else:
-                mess_value = mess.tg_mess_id
+            mess_value = mess.content_text
             reconst_mess = {
                 'content_type': mess.mess_type,
                 mess.mess_type: mess_value,
-                'caption': mess.caption
             }
+            if mess.mess_type != 'text':
+                reconst_mess.update({'caption': mess.caption})
             container.append(reconst_mess)
             tg_mess_ids.append(mess.tg_mess_id)
     return blank_template, tg_mess_ids
