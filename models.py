@@ -527,11 +527,11 @@ class User:
     def cmd_stack_pop(self):
         if len(self._commands) > 0:
             return self._commands.pop()
-        return None
+        return
 
     def start_advert(self):
         self.adv_proces = self.adv_proces_class()
-        return None
+        return
     
     def start_update(self, blank: dict, tg_mess_ids: list, adv_blank_id: str ):
         adv_blank = self.adv_proces_class().unwrapp_blank(blank)
@@ -544,14 +544,14 @@ class User:
         # blank = test_blank()
         blank = self.adv_proces.unwrapp_blank()
         self.upd_proces = self.adv_update_class(blank)
-        return None
+        return
 
     def stop_advert(self):
         self.adv_proces = None
-        return None
+        return
 
     def stop_upd(self):
         if self.adv_proces:
             self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
         self.upd_proces = None
-        return None
+        return

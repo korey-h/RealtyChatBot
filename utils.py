@@ -1,10 +1,13 @@
+import db_models as dbm
+
 from copy import deepcopy
+from datetime import datetime as dt
 
 from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE,
                      MESS_TEMPLATES, MAX_IN_MEDIA)
 
 from typing import List, Union
-
+from sqlalchemy.orm import Session
 from telebot.types import (InputMediaAudio, InputMediaDocument, 
                             InputMediaPhoto, InputMediaVideo)
 
@@ -149,3 +152,76 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
             tg_mess_ids.append(mess.tg_mess_id)
     return blank_template, tg_mess_ids
 
+
+
+def adv_to_db(user, session: Session, sended_mess_objs: list):
+    # user - это объект из модуля models.py
+    db_user = get_or_create(
+        session,
+        dbm.User,
+        create_params={'tg_id': user.id, 'name': user.name},
+        filter_params={'tg_id': user.id})
+    adv_blank = user.adv_proces.adv_blank
+    title_mess_content = user.adv_proces.title_mess_content
+    to_title_mess = {}
+    objs_for_db = []
+    for key in adv_blank.keys():
+        if key in title_mess_content:
+            data_key = adv_blank[key]['content_type']
+            data = adv_blank[key][data_key]
+            to_title_mess.update({key: data})
+    
+    current_datetime = dt.now()
+    sended_title_mess = sended_mess_objs[0]
+    title_message = dbm.TitleMessages(
+        tg_mess_id = sended_title_mess.id,
+        time=current_datetime,
+        mess_type='text',
+        user_id = db_user.id,
+        **to_title_mess
+    )
+    session.add(title_message)
+    session.commit()
+
+    def _add_additional_message(mess_obj, conteiner:list,
+                                sequence_num:int, enclosure_num:int):
+        LINKED_TYPES = ('audio', 'voice', 'video', 'document', 'sticker')
+        mess_type=mess_obj.content_type
+        content_text = ''
+        if mess_type == 'text':
+            content_text = mess_obj.text
+        elif mess_type == 'photo':
+            content_text = mess_obj.photo[-1].file_id
+        elif mess_type in LINKED_TYPES:
+            content_text = getattr(mess_obj, mess_type).file_id
+
+        additional_message = dbm.AdditionalMessages(
+            tg_mess_id = mess_obj.id,
+            time=current_datetime,
+            mess_type=mess_type,
+            caption=mess_obj.caption,
+            content_text=content_text,
+            title_message_id=title_message.id,
+            sequence_num=sequence_num,
+            enclosure_num=enclosure_num,
+        )
+        conteiner.append(additional_message)      
+    sequence_num = 0    
+    if len(sended_mess_objs) > 1:
+        for mess_obj in sended_mess_objs[1: ]:
+            enclosure_num = 0
+            if not isinstance(mess_obj, list):
+                _add_additional_message(mess_obj, objs_for_db,
+                                        sequence_num, enclosure_num)
+            else:
+                for sub_mess in mess_obj:
+                    _add_additional_message(sub_mess, objs_for_db,
+                                            sequence_num, enclosure_num)
+                    enclosure_num += 1
+            sequence_num += 1
+    advert = dbm.Adverts(
+        external_id=user.adv_proces.adv_blank_id,
+        title_message_id=title_message.id)
+    objs_for_db.append(advert)
+    session.add_all(objs_for_db)
+    session.commit()
