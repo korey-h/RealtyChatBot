@@ -342,6 +342,7 @@ class RegUpdateProces(RegistrProces):
         validators = self._all_validators()
         messages = self._all_prior_mess()
         self.adv_blank = copy(blank)
+        self.original_blank = {}
         self.butt_table = DataTable(self.adv_blank, validators, messages)
         # self._prior_messages = deepcopy(self._prior_messages)
         self._prior_messages[0] = self.welcome_mess
@@ -538,6 +539,7 @@ class User:
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
         self.upd_proces.tg_mess_ids = tg_mess_ids
+        self.upd_proces.original_blank = copy(adv_blank)
 
     def update_advert(self):
         # from fixtures import test_blank

@@ -21,7 +21,7 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
-from utils import adv_to_db, reconst_blank
+from utils import adv_former, adv_to_db, prepare_changed, reconst_blank
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -234,10 +234,26 @@ def cancel_all(message):
 def apply_update(message):
     user = get_user(message)
     cmd = user.get_cmd_stack()['cmd']
+    context = '*'
     if cmd == redaction:
         if user.adv_proces:
             user.stop_upd()
             context = user.adv_proces.repeat_last_step()
+        else:
+            redacted_blank = user.upd_proces.adv_blank
+            original_blank = user.upd_proces.original_blank
+            if len(redacted_blank) <= len(original_blank):
+                res = prepare_changed(original_blank, redacted_blank,
+                        user.upd_proces.title_mess_content,
+                        user.upd_proces.tg_mess_ids)
+                #TODO сохранение, удаление, отправка измененных
+            else:
+                mess = adv_former(user.upd_proces)
+                sended_mess_objs = adv_sender(mess)
+                context = user.upd_proces.make_registration()
+                adv_to_db(user, SESSION, sended_mess_objs)
+                #TODO создать таблицу для связей нового и старого adv_blank_id
+                
         user.cmd_stack_pop()
     send_multymessage(user.id, context)
 
@@ -366,6 +382,16 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
             user.id,
             text=MESSAGES['no_redact_permissions'])
     
+    if not perms.is_resend_while_redaction_active(user):
+        return bot.send_message(
+            user.id,
+            text=MESSAGES['redact_period_ended'])
+    
+    if not perms.is_redac_available_again(user):
+         return bot.send_message(
+            user.id,
+            text=MESSAGES['redact_too_often'])       
+
     blank_template = RegistrProces().adv_blank.copy()
     adv_blank, tg_mess_ids = reconst_blank(title_message, blank_template)
     user.start_update(adv_blank, tg_mess_ids, data)

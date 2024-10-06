@@ -140,6 +140,10 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
     if other:
         container = blank_template[other]
         additional_messages = title_message.additional_messages
+
+        #TODO выполнить сортировку внутри additional_messages по
+        #sequence_num и enclousere num
+
         for mess in additional_messages:
             mess_value = mess.content_text
             reconst_mess = {
@@ -225,3 +229,67 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
     objs_for_db.append(advert)
     session.add_all(objs_for_db)
     session.commit()
+
+
+def make_title_mess(items: dict, template: str = MESS_TEMPLATES['adv_line']):
+    title_mess = ''
+    for key, value in items.items():
+        text_elem = '-' if not value else str(value['text'])
+        title_mess += template.format(ABW[key], text_elem)       
+    return {'content_type': 'text', 'text': title_mess}
+
+
+def prepare_changed(original_blank: dict, redacted_blank: dict,
+                 title_mess_content: list, tg_mess_ids: list) -> dict:
+
+    title_mess_items = {}
+    deleted = []
+    changed = []
+    added_over = []
+    is_title_changed = False
+    additional_item_keys = []
+    for key, value in original_blank.items():
+        if key in title_mess_content:
+            title_mess_items.update({key:value})
+            if original_blank[key] != redacted_blank[key]:
+                is_title_changed = True
+        else:
+            additional_item_keys.append(key)
+    
+    if is_title_changed:
+        title_mess = make_title_mess(title_mess_items)
+        changed.append(
+            {'tg_id': tg_mess_ids[0], 'mess': title_mess}
+        )
+    
+    num = 1
+    for key in additional_item_keys:
+        if isinstance(original_blank[key],(list, tuple)):
+            am_original = len(original_blank[key])
+            am_redacted = len(redacted_blank[key])
+            if am_redacted > am_original:
+                added_over.append(
+                    {key: redacted_blank[key][am_original:am_redacted]}
+                )
+            elif am_redacted < am_original:
+                for i in range(am_redacted):
+                    if original_blank[key][i] != redacted_blank[key][i]:
+                        changed.append(
+                            {'tg_id': tg_mess_ids[num],
+                             'mess': redacted_blank[key][i]}
+                        )
+                    num += 1
+                for i in range(am_redacted, am_original):
+                    deleted.append(
+                        {'tg_id': tg_mess_ids[num],
+                         'mess': original_blank[key][i]}
+                        )
+                    num += 1
+        elif original_blank[key] != redacted_blank[key]:
+            changed.append(
+                {'tg_id': tg_mess_ids[num],
+                 'mess': redacted_blank[key]}
+            )
+            num += 1
+
+    return {'changed': changed, 'deleted': deleted, 'added_over': added_over}
