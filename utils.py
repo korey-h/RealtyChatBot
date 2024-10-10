@@ -293,3 +293,52 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
             num += 1
 
     return {'changed': changed, 'deleted': deleted, 'added_over': added_over}
+
+
+def is_sending_as_new(original_blank: dict, redacted_blank: dict,
+                 title_mess_content: list) -> bool:
+ 
+    def _get_additional_item_keys(blank: dict,
+                                  title_mess_content: list)-> list:
+        additional_item_keys = []
+        for key in blank.keys():
+            if key in title_mess_content:
+                continue
+            additional_item_keys.append(key)
+        return additional_item_keys
+    
+    def _group_by_type(items: list) -> dict:
+        by_type_counter = {}
+        for item in items:
+            item_type = item['content_type']
+            amount = by_type_counter.get(item_type)
+            if amount:
+                by_type_counter[item_type] += 1
+            else:
+                by_type_counter[item_type] = 1
+        return by_type_counter
+    
+    def _is_excess(original: dict, redacted: dict) -> bool:
+        for key, orig_value in original.items():
+            red_value = redacted.get(key)
+            if red_value and red_value > orig_value:
+                return True
+
+    orig_item_keys = _get_additional_item_keys(original_blank,
+                                               title_mess_content)
+    red_item_keys = _get_additional_item_keys(redacted_blank,
+                                               title_mess_content)
+    if len(red_item_keys) > len(orig_item_keys):
+        return True
+    
+    for key, value in original_blank.items():
+        if isinstance(value,(list, tuple)):
+            orig_types = _group_by_type(value)
+            red_types = _group_by_type(redacted_blank[key])
+            orig_keys =  set(orig_types.keys())
+            red_keys = set(red_types.keys())
+            if red_keys.difference(orig_keys):
+                return True
+            if _is_excess(orig_types, red_types):
+                return True
+    return False

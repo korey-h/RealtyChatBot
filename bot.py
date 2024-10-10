@@ -170,6 +170,45 @@ def try_edit(message, **kwargs):
     # time.sleep(60)
     # bot.edit_message_text(text_correct, user.id, mess_sended.message_id)
 
+@bot.message_handler(commands=['try_fake'])
+#тестовая функция для проверки возможностей по редактированию сообщений
+def try_fake(message, **kwargs):
+    media_class = {
+        'audio': InputMediaAudio,
+        'document': InputMediaDocument,
+        'photo':  InputMediaPhoto,
+        'video': InputMediaVideo
+    }
+    self_name = 'try_fake'
+    user = get_user(message)
+    if user.is_stack_empty() or user.cmd_stack['cmd_name'] != self_name:
+        user.cmd_stack = (self_name, try_fake)
+        bot.send_message(user.id, text='высылай фото!')
+        return
+    if len(user.storage) < 1:
+        data = RegistrProces()._pars_mess_obj(message)
+        user.storage.append(data)
+        bot.send_message(user.id, text='высылай документ!')
+    elif len(user.storage) < 2:
+        data = RegistrProces()._pars_mess_obj(message)
+        user.storage.append(data)
+    else:
+        sent_messages = send_multymessage(user.id, user.storage)
+        time.sleep(2)
+        # text = 'Фотка тю-тю!'
+        
+        photo_id = sent_messages[0].message_id
+        doc_id = sent_messages[1].message_id
+
+        media_photo = media_class['photo'](media=photo_id)
+        media_doc = media_class['document'](media=doc_id)
+        bot.edit_message_media(media_photo, user.id, doc_id )
+        time.sleep(2)
+        bot.edit_message_media(media_doc, user.id, photo_id )
+
+
+
+
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
