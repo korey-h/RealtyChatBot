@@ -95,13 +95,18 @@ def test_is_sending_as_new():
     )
     blank_del_doc = deepcopy(original_blank)
     blank_del_doc['photo'].pop(3)
+
+    blank_del_add = deepcopy(original_blank)
+    blank_del_add['photo'][1] =  {'content_type': 'document', 'document': 'doc_003'}
     res1 = is_sending_as_new(original_blank, blank_add_photo, 
                               title_mess_content)
     res2 = is_sending_as_new(original_blank, blank_add_type, 
                               title_mess_content)
     res3 = is_sending_as_new(original_blank, blank_del_doc, 
                               title_mess_content)
-    print(res1, res2, res3)
+    res4 = is_sending_as_new(original_blank, blank_del_add, 
+                              title_mess_content)
+    print(res1, res2, res3, res4)
 
 if __name__ == '__main__':
     test_is_sending_as_new()

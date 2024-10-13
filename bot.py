@@ -21,7 +21,8 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
-from utils import adv_former, adv_to_db, prepare_changed, reconst_blank
+from utils import (adv_former, adv_to_db, is_sending_as_new,
+                   prepare_changed, reconst_blank)
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -98,6 +99,7 @@ def send_multymessage(user_id, pre_mess: List[dict]):
     sent_messages = []
     for mess_data in pre_mess:
         content_type = mess_data.pop('content_type', None) or 'text'
+        mess_data.pop('tg_mess_id', None)
         if content_type not in SEND_METHODS.keys():
             content_type = 'text'
         sender = SEND_METHODS[content_type]
@@ -281,17 +283,21 @@ def apply_update(message):
         else:
             redacted_blank = user.upd_proces.adv_blank
             original_blank = user.upd_proces.original_blank
-            if len(redacted_blank) <= len(original_blank):
-                res = prepare_changed(original_blank, redacted_blank,
-                        user.upd_proces.title_mess_content,
-                        user.upd_proces.tg_mess_ids)
-                #TODO сохранение, удаление, отправка измененных
-            else:
+            title_mess_content = user.upd_proces.title_mess_content
+            if is_sending_as_new(original_blank, redacted_blank,
+                        title_mess_content):
                 mess = adv_former(user.upd_proces)
                 sended_mess_objs = adv_sender(mess)
                 context = user.upd_proces.make_registration()
+                user.upd_proces.adv_blank = user.upd_proces.wrapp_blank()
                 adv_to_db(user, SESSION, sended_mess_objs)
                 #TODO создать таблицу для связей нового и старого adv_blank_id
+            else:
+                res = prepare_changed(original_blank, redacted_blank,
+                        title_mess_content,
+                        user.upd_proces.tg_mess_ids)
+                #TODO сохранение, удаление, отправка измененных
+                
                 
         user.cmd_stack_pop()
     send_multymessage(user.id, context)

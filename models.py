@@ -472,9 +472,12 @@ class RegUpdateProces(RegistrProces):
                 value = {
                     'content_type': 'text',
                     'text': str(value)}
+                new.update({key: value})
             elif isinstance(value, list):
                 value = value.copy()
-            new.update({key: value})
+                new.update({key: value})
+            elif isinstance(value, dict):
+                new.update(value)
         return new             
 
 
@@ -539,7 +542,7 @@ class User:
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
         self.upd_proces.tg_mess_ids = tg_mess_ids
-        self.upd_proces.original_blank = copy(adv_blank)
+        self.upd_proces.original_blank = deepcopy(adv_blank)
 
     def update_advert(self):
         # from fixtures import test_blank

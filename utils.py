@@ -149,6 +149,7 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
             reconst_mess = {
                 'content_type': mess.mess_type,
                 mess.mess_type: mess_value,
+                'tg_mess_id': mess.tg_mess_id,
             }
             if mess.mess_type != 'text':
                 reconst_mess.update({'caption': mess.caption})
@@ -165,8 +166,10 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
         dbm.User,
         create_params={'tg_id': user.id, 'name': user.name},
         filter_params={'tg_id': user.id})
-    adv_blank = user.adv_proces.adv_blank
-    title_mess_content = user.adv_proces.title_mess_content
+    
+    proces = user.adv_proces if user.adv_proces else user.upd_proces
+    adv_blank = proces.adv_blank
+    title_mess_content = proces.title_mess_content
     to_title_mess = {}
     objs_for_db = []
     for key in adv_blank.keys():
@@ -224,7 +227,7 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
                     enclosure_num += 1
             sequence_num += 1
     advert = dbm.Adverts(
-        external_id=user.adv_proces.adv_blank_id,
+        external_id=proces.adv_blank_id,
         title_message_id=title_message.id)
     objs_for_db.append(advert)
     session.add_all(objs_for_db)
