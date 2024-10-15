@@ -275,13 +275,13 @@ def cancel_all(message):
 def apply_update(message):
     user = get_user(message)
     cmd = user.get_cmd_stack()['cmd']
-    context = '*'
+    context = [{'text': MESSAGES['renew_finished']}]
     if cmd == redaction:
         if user.adv_proces:
             user.stop_upd()
             context = user.adv_proces.repeat_last_step()
         else:
-            redacted_blank = user.upd_proces.adv_blank
+            redacted_blank = user.upd_proces.clear_deleted()
             original_blank = user.upd_proces.original_blank
             title_mess_content = user.upd_proces.title_mess_content
             if is_sending_as_new(original_blank, redacted_blank,
@@ -296,7 +296,10 @@ def apply_update(message):
                 res = prepare_changed(original_blank, redacted_blank,
                         title_mess_content,
                         user.upd_proces.tg_mess_ids)
+                for tg_id in res['deleted'].keys():
+                    bot.delete_message(my_chat_id, tg_id)
                 #TODO сохранение, удаление, отправка измененных
+                #TODO удаление через Try на случай, если сообщение нет в базе Телеграм
                 
                 
         user.cmd_stack_pop()

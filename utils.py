@@ -135,7 +135,7 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
             continue
         if hasattr(title_message, key):
             blank_template[key] = getattr(title_message, key)
-    tg_mess_ids = [title_message.tg_mess_id]
+    tg_mess_ids = [int(title_message.tg_mess_id)]
     other = composit_items[0] if composit_items else None
     if other:
         container = blank_template[other]
@@ -149,7 +149,7 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
             reconst_mess = {
                 'content_type': mess.mess_type,
                 mess.mess_type: mess_value,
-                'tg_mess_id': mess.tg_mess_id,
+                'tg_mess_id': int(mess.tg_mess_id),
             }
             if mess.mess_type != 'text':
                 reconst_mess.update({'caption': mess.caption})
@@ -313,6 +313,8 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
     def _group_by_type(items: list) -> dict:
         by_type_counter = {}
         for item in items:
+            if not item:
+                continue
             item_type = item['content_type']
             amount = by_type_counter.get(item_type)
             if amount:

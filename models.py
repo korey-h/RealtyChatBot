@@ -341,7 +341,7 @@ class RegUpdateProces(RegistrProces):
         super().__init__()
         validators = self._all_validators()
         messages = self._all_prior_mess()
-        self.adv_blank = copy(blank)
+        self.adv_blank = copy(blank) # TODO проверить необходимость deepcopy
         self.original_blank = {}
         self.butt_table = DataTable(self.adv_blank, validators, messages)
         # self._prior_messages = deepcopy(self._prior_messages)
@@ -474,12 +474,18 @@ class RegUpdateProces(RegistrProces):
                     'text': str(value)}
                 new.update({key: value})
             elif isinstance(value, list):
-                value = value.copy()
-                new.update({key: value})
+                cleaned = [item for item in value if item]
+                new.update({key: cleaned})
             elif isinstance(value, dict):
                 new.update(value)
         return new             
 
+    def clear_deleted(self):
+        for key, item in self.adv_blank.items():
+            if not isinstance(item, (list, tuple)):
+                continue
+            self.adv_blank[key] = [subitem for subitem in item if subitem]
+        return self.adv_blank
 
 class User:
     adv_proces_class = RegistrProces
