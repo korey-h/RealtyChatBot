@@ -242,15 +242,35 @@ def make_title_mess(items: dict, template: str = MESS_TEMPLATES['adv_line']):
     return {'content_type': 'text', 'text': title_mess}
 
 
+
 def prepare_changed(original_blank: dict, redacted_blank: dict,
                  title_mess_content: list, tg_mess_ids: list) -> dict:
 
     title_mess_items = {}
-    deleted = []
-    changed = []
-    added_over = []
+    deleted = {}
+    changed = {}
+
     is_title_changed = False
     additional_item_keys = []
+
+    def _glue_tg_ids(additional_item_keys: list, blank: dict) -> dict:
+        ids_messages = {}
+        def _catch_message(item:dict):
+            tg_id = item.get('tg_mess_id')
+            if tg_id:
+                ids_messages.update({tg_id: item})
+        
+        for key in additional_item_keys:
+            item = blank.get(key)
+            if not item:
+                continue
+            if isinstance(item, dict):
+                _catch_message(item)
+            elif isinstance(item, list):
+                for subitem in item:
+                    _catch_message(subitem)
+        return ids_messages                   
+
     for key, value in original_blank.items():
         if key in title_mess_content:
             title_mess_items.update({key:value})
@@ -261,41 +281,21 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
     
     if is_title_changed:
         title_mess = make_title_mess(title_mess_items)
-        changed.append(
-            {'tg_id': tg_mess_ids[0], 'mess': title_mess}
-        )
+        changed.update({tg_mess_ids[0]: title_mess})
     
-    num = 1
-    for key in additional_item_keys:
-        if isinstance(original_blank[key],(list, tuple)):
-            am_original = len(original_blank[key])
-            am_redacted = len(redacted_blank[key])
-            if am_redacted > am_original:
-                added_over.append(
-                    {key: redacted_blank[key][am_original:am_redacted]}
-                )
-            elif am_redacted < am_original:
-                for i in range(am_redacted):
-                    if original_blank[key][i] != redacted_blank[key][i]:
-                        changed.append(
-                            {'tg_id': tg_mess_ids[num],
-                             'mess': redacted_blank[key][i]}
-                        )
-                    num += 1
-                for i in range(am_redacted, am_original):
-                    deleted.append(
-                        {'tg_id': tg_mess_ids[num],
-                         'mess': original_blank[key][i]}
-                        )
-                    num += 1
-        elif original_blank[key] != redacted_blank[key]:
-            changed.append(
-                {'tg_id': tg_mess_ids[num],
-                 'mess': redacted_blank[key]}
-            )
-            num += 1
-
-    return {'changed': changed, 'deleted': deleted, 'added_over': added_over}
+    original_w_ids = _glue_tg_ids(additional_item_keys, original_blank)
+    redacted_w_ids = _glue_tg_ids(additional_item_keys, redacted_blank)
+   
+    for id in original_w_ids.keys():
+        red_mess = redacted_w_ids.get(id)
+        orig_mess = original_w_ids.get(id)
+        if not red_mess:
+            deleted.update({id: orig_mess})
+            continue
+        if red_mess != orig_mess:
+            changed.update({id: red_mess})
+    
+    return {'changed': changed, 'deleted': deleted}
 
 
 def is_sending_as_new(original_blank: dict, redacted_blank: dict,

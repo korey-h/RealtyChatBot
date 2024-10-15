@@ -12,57 +12,40 @@ def test_prepare_changed():
         'district': {'text':''},
         'price': {'text':2000},
         'photo': [
-            {'photo': 'photo_001'}
+            {'photo': 'photo_001', 'tg_mess_id': '00011'}
         ],
     }
 
-    red_blank_equal = {
-        'space': {'text': 1},
-        'flour': {'text':1},
-        'material': {'text':'wood'},
-        'address': {'text':'street 1'},
-        'year': {'text':1980},
-        'district': {'text':'Oblast`'},
-        'price': {'text':2000},
-        'photo': [
-            {'photo': 'photo_001'}
-        ],
-    }
+    red_blank_equal = deepcopy(original_blank)
 
-    red_blank_more = {
-        'space': {'text': 1},
-        'flour': {'text':2},
-        'material': {'text':'wood'},
-        'address': {'text':'street 1'},
-        'year': {'text':1980},
-        'district': {'text':''},
-        'price': {'text':2000},
-        'photo': [
-            {'photo': 'photo_001'}, {'photo': 'photo_002'}, {'photo': 'photo_003'}
-        ],
-    }
+    red_blank_more = deepcopy(original_blank)
+    red_blank_more['photo'].extend([
+        {'photo': 'photo_002', 'tg_mess_id': None},
+        {'photo': 'photo_003', 'tg_mess_id': None}])
 
-    red_blank_mini = {
-        'space': {'text': 1},
-        'flour': {'text':1},
-        'material': {'text':'wood'},
-        'address': {'text':'street 1'},
-        'year': {'text':1980},
-        'district': {'text':'Oblast`'},
-        'price': {'text':2000},
-        'photo': [],
-    }
+
+    red_blank_mini = deepcopy(original_blank)
+    red_blank_mini['photo'] = []
 
     title_mess_content = ['space', 'flour', 'material', 'address','year',
                 'district','price']
     tg_mess_ids = ['00000', '00011']
+
+    res = prepare_changed(original_blank, red_blank_equal, title_mess_content, tg_mess_ids)       
+    print(res)
+
+    res = prepare_changed(original_blank, red_blank_more, title_mess_content, tg_mess_ids)       
+    print(res)
+
     res = prepare_changed(original_blank, red_blank_mini, title_mess_content, tg_mess_ids)       
     print(res)
 
     title_mess_content = ['space', 'material', 'address','year',
                 'district','price']
-    tg_mess_ids = ['00000', '00011', '00020']
-    res = prepare_changed(original_blank, red_blank_mini, title_mess_content, tg_mess_ids)       
+    original_blank['flour'].update({'tg_mess_id': '00001'})
+    red_blank_flour = deepcopy(original_blank)
+    red_blank_flour['flour']['text'] = 3
+    res = prepare_changed(original_blank, red_blank_flour, title_mess_content, tg_mess_ids)       
     print(res)
 
 
@@ -109,4 +92,5 @@ def test_is_sending_as_new():
     print(res1, res2, res3, res4)
 
 if __name__ == '__main__':
-    test_is_sending_as_new()
+    # test_is_sending_as_new()
+    test_prepare_changed()
