@@ -357,7 +357,8 @@ def make_media(mess: dict):
         'photo':  InputMediaPhoto,
         'video': InputMediaVideo
     }
-    media_class = media_classes.get(mess['content_type'])
+    content_type = mess['content_type']
+    media_class = media_classes.get(content_type)
     if not media_class:
         return
-    return media_class(media=mess['tg_mess_id'])
+    return media_class(media=mess[content_type])

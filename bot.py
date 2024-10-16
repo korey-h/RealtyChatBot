@@ -317,7 +317,6 @@ def apply_update(message):
                             continue
                         bot.edit_message_media(media, my_chat_id,
                                                   mess['tg_mess_id'])
-                        # TODO ошибка при отправке фото.
                     except Exception:
                         edit_error = True
                 #TODO сохранение, удаление в базу данных
