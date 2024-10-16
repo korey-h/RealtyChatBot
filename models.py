@@ -406,7 +406,7 @@ class RegUpdateProces(RegistrProces):
             elif (isinstance(row.value, Ref) and 
                     isinstance(row.value.val, dict) and mess_obj):
                 data = self._pars_mess_obj(mess_obj)
-                row.value.val = data
+                row.value.val.update(data)
                   
             elif (isinstance(row.value, list) or
                     isinstance(row.value.val, list)) and mess_obj:

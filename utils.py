@@ -234,12 +234,12 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
     session.commit()
 
 
-def make_title_mess(items: dict, template: str = MESS_TEMPLATES['adv_line']):
+def make_title_mess(items: dict, tg_id: int, template: str = MESS_TEMPLATES['adv_line']):
     title_mess = ''
     for key, value in items.items():
-        text_elem = '-' if not value else str(value['text'])
+        text_elem = '-' if not value else str(value)
         title_mess += template.format(ABW[key], text_elem)       
-    return {'content_type': 'text', 'text': title_mess}
+    return {'content_type': 'text', 'text': title_mess, 'tg_mess_id': tg_id}
 
 
 
@@ -275,12 +275,13 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
         if key in title_mess_content:
             title_mess_items.update({key:value})
             if original_blank[key] != redacted_blank[key]:
+                title_mess_items[key] = redacted_blank[key]
                 is_title_changed = True
         else:
             additional_item_keys.append(key)
     
     if is_title_changed:
-        title_mess = make_title_mess(title_mess_items)
+        title_mess = make_title_mess(title_mess_items, tg_mess_ids[0])
         changed.update({tg_mess_ids[0]: title_mess})
     
     original_w_ids = _glue_tg_ids(additional_item_keys, original_blank)
@@ -347,3 +348,16 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
             if _is_excess(orig_types, red_types):
                 return True
     return False
+
+
+def make_media(mess: dict):
+    media_classes = {
+        'audio': InputMediaAudio,
+        'document': InputMediaDocument,
+        'photo':  InputMediaPhoto,
+        'video': InputMediaVideo
+    }
+    media_class = media_classes.get(mess['content_type'])
+    if not media_class:
+        return
+    return media_class(media=mess['tg_mess_id'])

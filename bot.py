@@ -21,7 +21,7 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
-from utils import (adv_former, adv_to_db, is_sending_as_new,
+from utils import (adv_former, adv_to_db, is_sending_as_new, make_media,
                    prepare_changed, reconst_blank)
 
 if os.path.exists('.env'):
@@ -99,13 +99,14 @@ def send_multymessage(user_id, pre_mess: List[dict]):
     sent_messages = []
     for mess_data in pre_mess:
         content_type = mess_data.pop('content_type', None) or 'text'
-        mess_data.pop('tg_mess_id', None)
+        tg_mess_id = mess_data.pop('tg_mess_id', None)
         if content_type not in SEND_METHODS.keys():
             content_type = 'text'
         sender = SEND_METHODS[content_type]
         sent_mess = sender(user_id, **mess_data)
         sent_messages.append(sent_mess)
-        mess_data.update({'content_type': content_type})
+        mess_data.update({'content_type': content_type, 'tg_mess_id': tg_mess_id})
+
     return sent_messages
 
 
@@ -276,6 +277,8 @@ def apply_update(message):
     user = get_user(message)
     cmd = user.get_cmd_stack()['cmd']
     context = [{'text': MESSAGES['renew_finished']}]
+    del_error = False
+    edit_error = False
     if cmd == redaction:
         if user.adv_proces:
             user.stop_upd()
@@ -297,12 +300,31 @@ def apply_update(message):
                         title_mess_content,
                         user.upd_proces.tg_mess_ids)
                 for tg_id in res['deleted'].keys():
-                    bot.delete_message(my_chat_id, tg_id)
-                #TODO сохранение, удаление, отправка измененных
-                #TODO удаление через Try на случай, если сообщение нет в базе Телеграм
+                    try:
+                        bot.delete_message(my_chat_id, tg_id)
+                    except Exception:
+                        del_error = True
                 
-                
-        user.cmd_stack_pop()
+                for tg_id, mess in res['changed'].items():
+                    try:
+                        if mess['content_type'] == 'text':
+                            bot.edit_message_text(mess['text'], my_chat_id,
+                                                  mess['tg_mess_id'])
+                            continue
+                        media = make_media(mess)
+                        if not media:
+                            edit_error = True
+                            continue
+                        bot.edit_message_media(media, my_chat_id,
+                                                  mess['tg_mess_id'])
+                        # TODO ошибка при отправке фото.
+                    except Exception:
+                        edit_error = True
+                #TODO сохранение, удаление в базу данных
+                if del_error or edit_error:
+                    context.append({'text': MESSAGES['renew_tg_error']})
+        user.stop_upd()
+    user.cmd_stack_pop()
     send_multymessage(user.id, context)
 
 
