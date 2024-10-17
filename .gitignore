@@ -133,6 +133,7 @@ venv.bak/
 *.log
 alembic/
 alembic.ini
+*.db-journal
 
 # Database files
 *.db

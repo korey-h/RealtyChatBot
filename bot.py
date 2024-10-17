@@ -299,12 +299,17 @@ def apply_update(message):
                 res = prepare_changed(original_blank, redacted_blank,
                         title_mess_content,
                         user.upd_proces.tg_mess_ids)
-                for tg_id in res['deleted'].keys():
+                deleted_ids = list(res['deleted'].keys())
+                for tg_id in deleted_ids:
                     try:
                         bot.delete_message(my_chat_id, tg_id)
                     except Exception:
                         del_error = True
-                
+
+                SESSION.query(dbm.AdditionalMessages).filter(
+                    dbm.AdditionalMessages.tg_mess_id.in_(deleted_ids)
+                    ).delete(synchronize_session='evaluate')
+
                 for tg_id, mess in res['changed'].items():
                     try:
                         if mess['content_type'] == 'text':
