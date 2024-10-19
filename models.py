@@ -348,6 +348,7 @@ class RegUpdateProces(RegistrProces):
         self._prior_messages[0] = self.welcome_mess
         self.del_is_conf = True
         self.tg_mess_ids = tg_mess_ids
+        self.db_mess_objs = {}
     
     def mess_wrapper(self, value) -> List[dict]:
         pre_mess = []
@@ -543,12 +544,14 @@ class User:
         self.adv_proces = self.adv_proces_class()
         return
     
-    def start_update(self, blank: dict, tg_mess_ids: list, adv_blank_id: str ):
+    def start_update(self, blank: dict, tg_mess_ids: list, adv_blank_id: str,
+                     db_mess_objs: dict = {} ):
         adv_blank = self.adv_proces_class().unwrapp_blank(blank)
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
         self.upd_proces.tg_mess_ids = tg_mess_ids
         self.upd_proces.original_blank = deepcopy(adv_blank)
+        self.upd_proces.db_mess_objs = db_mess_objs
 
     def update_advert(self):
         # from fixtures import test_blank

@@ -129,13 +129,17 @@ def get_or_create(session, model, create_params: dict,
 
 def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
     composit_items = []
+    db_mess_objs = {}
     for key, value in blank_template.items():
         if isinstance(value, (list, tuple)):
             composit_items.append(key)
             continue
         if hasattr(title_message, key):
             blank_template[key] = getattr(title_message, key)
-    tg_mess_ids = [int(title_message.tg_mess_id)]
+    title_mess_id = int(title_message.tg_mess_id)
+    tg_mess_ids = [title_mess_id]
+    db_mess_objs[title_mess_id] = title_message
+
     other = composit_items[0] if composit_items else None
     if other:
         container = blank_template[other]
@@ -146,16 +150,18 @@ def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
 
         for mess in additional_messages:
             mess_value = mess.content_text
+            tg_mess_id = int(mess.tg_mess_id)
+            db_mess_objs[tg_mess_id] = mess
             reconst_mess = {
                 'content_type': mess.mess_type,
                 mess.mess_type: mess_value,
-                'tg_mess_id': int(mess.tg_mess_id),
+                'tg_mess_id': tg_mess_id,
             }
             if mess.mess_type != 'text':
                 reconst_mess.update({'caption': mess.caption})
             container.append(reconst_mess)
             tg_mess_ids.append(mess.tg_mess_id)
-    return blank_template, tg_mess_ids
+    return blank_template, tg_mess_ids, db_mess_objs
 
 
 
@@ -362,3 +368,7 @@ def make_media(mess: dict):
     if not media_class:
         return
     return media_class(media=mess[content_type])
+
+
+def update_db_obj(db_mess_obj, mess: dict):
+    pass

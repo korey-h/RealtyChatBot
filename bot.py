@@ -22,7 +22,7 @@ import buttons as sb
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
 from utils import (adv_former, adv_to_db, is_sending_as_new, make_media,
-                   prepare_changed, reconst_blank)
+                   prepare_changed, reconst_blank, update_db_obj)
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -324,6 +324,10 @@ def apply_update(message):
                                                   mess['tg_mess_id'])
                     except Exception:
                         edit_error = True
+                    
+                    db_mess_obj = user.upd_proces.db_mess_objs[tg_id]
+                    update_db_obj(db_mess_obj, mess) # TODO написать функцию в utils
+
                 #TODO сохранение, удаление в базу данных
                 if del_error or edit_error:
                     context.append({'text': MESSAGES['renew_tg_error']})
@@ -467,8 +471,8 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
             text=MESSAGES['redact_too_often'])       
 
     blank_template = RegistrProces().adv_blank.copy()
-    adv_blank, tg_mess_ids = reconst_blank(title_message, blank_template)
-    user.start_update(adv_blank, tg_mess_ids, data)
+    adv_blank, tg_mess_ids, db_mess_objs = reconst_blank(title_message, blank_template)
+    user.start_update(adv_blank, tg_mess_ids, data, db_mess_objs)
     user.cmd_stack_pop()
     redaction(message, user, **{'from': 'find_mess_for_renew'})
 
