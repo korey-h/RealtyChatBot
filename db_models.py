@@ -52,7 +52,23 @@ class TitleMessages(Base):
     user: Mapped[Optional["User"]] = relationship(back_populates='messages')
     additional_messages: Mapped[List['AdditionalMessages']] = relationship(
         back_populates='title_message', cascade='all, delete-orphan')
-
+    
+    def update_from_tg_format(self, message: dict):
+        tg_db_translater = {
+            'content_type': 'mess_type',
+            'space': 'space',
+            'flour': 'flour',
+            'material': 'material',
+            'address': 'address',
+            'year': 'year',
+            'district': 'district',
+            'price': 'price',
+        }
+        for key, value in message.items():
+            db_key = tg_db_translater.get(key)
+            if not db_key:
+                continue
+            setattr(self, db_key, value)
 
 class AdditionalMessages(Base):
     __tablename__ = 'additional_messages'
@@ -72,6 +88,26 @@ class AdditionalMessages(Base):
     sequence_num: Mapped[int] = mapped_column(default=0)
     enclosure_num: Mapped[int] = mapped_column(default=0)
     content_text: Mapped[str] = mapped_column(String(), nullable=True)
+
+    def update_from_tg_format(self, message: dict):
+        tg_db_translater = {
+            'content_type': 'mess_type',
+            'caption': 'caption',
+            'text': 'content_text',
+            'audio': 'content_text',
+            'photo': 'content_text',
+            'voice': 'content_text',
+            'video': 'content_text',
+            'document': 'content_text',
+            'location': 'content_text',
+            'contact': 'content_text',
+            'sticker': 'content_text',
+        }
+        for key, value in message.items():
+            db_key = tg_db_translater.get(key)
+            if not db_key:
+                continue
+            setattr(self, db_key, value)
 
 
 class Adverts(Base):

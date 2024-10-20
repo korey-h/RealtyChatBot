@@ -8,6 +8,7 @@ from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE,
 
 from typing import List, Union
 from sqlalchemy.orm import Session
+from telebot import TeleBot
 from telebot.types import (InputMediaAudio, InputMediaDocument, 
                             InputMediaPhoto, InputMediaVideo)
 
@@ -255,6 +256,7 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
     title_mess_items = {}
     deleted = {}
     changed = {}
+    title_raw = {}
 
     is_title_changed = False
     additional_item_keys = []
@@ -289,6 +291,8 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
     if is_title_changed:
         title_mess = make_title_mess(title_mess_items, tg_mess_ids[0])
         changed.update({tg_mess_ids[0]: title_mess})
+        title_raw.update({tg_mess_ids[0]: title_mess_items})
+
     
     original_w_ids = _glue_tg_ids(additional_item_keys, original_blank)
     redacted_w_ids = _glue_tg_ids(additional_item_keys, redacted_blank)
@@ -302,7 +306,7 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
         if red_mess != orig_mess:
             changed.update({id: red_mess})
     
-    return {'changed': changed, 'deleted': deleted}
+    return {'changed': changed, 'deleted': deleted, 'title_raw': title_raw}
 
 
 def is_sending_as_new(original_blank: dict, redacted_blank: dict,
@@ -370,5 +374,49 @@ def make_media(mess: dict):
     return media_class(media=mess[content_type])
 
 
-def update_db_obj(db_mess_obj, mess: dict):
-    pass
+def update_db_obj(db_mess_objs, tg_id: int, mess: dict):
+    obj = db_mess_objs.get(tg_id)
+    if not obj:
+        return
+    obj.update_from_tg_format(mess)
+
+
+def update_messages(bot: TeleBot, chat_id: int, session: Session,
+                    changed: dict, title_raw: dict, db_mess_objs):
+    successful = True
+    for tg_id, mess in changed.items():
+        try:
+            if mess['content_type'] == 'text':
+                bot.edit_message_text(mess['text'], chat_id,
+                                      mess['tg_mess_id'])         
+            else:
+                media = make_media(mess)
+                if not media:
+                    successful = False
+                else:
+                    bot.edit_message_media(media, chat_id,
+                                           mess['tg_mess_id'])
+        except Exception:
+            successful = False
+
+        if title_raw and title_raw.get(tg_id):
+            mess = title_raw[tg_id]
+
+        update_db_obj(db_mess_objs, tg_id, mess)
+    session.commit()
+    return successful
+
+
+def delete_messages(bot: TeleBot, chat_id: int, session: Session,
+                    deleted_ids: list):
+    successful = True
+    for tg_id in deleted_ids:
+        try:
+            bot.delete_message(chat_id, tg_id)
+        except Exception:
+            successful = False
+
+    session.query(dbm.AdditionalMessages).filter(
+        dbm.AdditionalMessages.tg_mess_id.in_(deleted_ids)
+        ).delete(synchronize_session='evaluate')
+    return successful

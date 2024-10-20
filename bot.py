@@ -21,8 +21,8 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
-from utils import (adv_former, adv_to_db, is_sending_as_new, make_media,
-                   prepare_changed, reconst_blank, update_db_obj)
+from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
+                   make_media, prepare_changed, reconst_blank, update_messages)
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -277,8 +277,9 @@ def apply_update(message):
     user = get_user(message)
     cmd = user.get_cmd_stack()['cmd']
     context = [{'text': MESSAGES['renew_finished']}]
-    del_error = False
-    edit_error = False
+    del_success = True
+    upd_success = True
+
     if cmd == redaction:
         if user.adv_proces:
             user.stop_upd()
@@ -300,36 +301,18 @@ def apply_update(message):
                         title_mess_content,
                         user.upd_proces.tg_mess_ids)
                 deleted_ids = list(res['deleted'].keys())
-                for tg_id in deleted_ids:
-                    try:
-                        bot.delete_message(my_chat_id, tg_id)
-                    except Exception:
-                        del_error = True
+                if deleted_ids:
+                    del_success = delete_messages(bot, my_chat_id, SESSION,
+                                                deleted_ids)
+                
+                changed = res['changed']
+                title_raw = res['title_raw']
+                if changed:
+                    db_mess_objs = user.upd_proces.db_mess_objs
+                    upd_success = update_messages(bot, my_chat_id, SESSION,
+                                                  changed, title_raw, db_mess_objs)
 
-                SESSION.query(dbm.AdditionalMessages).filter(
-                    dbm.AdditionalMessages.tg_mess_id.in_(deleted_ids)
-                    ).delete(synchronize_session='evaluate')
-
-                for tg_id, mess in res['changed'].items():
-                    try:
-                        if mess['content_type'] == 'text':
-                            bot.edit_message_text(mess['text'], my_chat_id,
-                                                  mess['tg_mess_id'])
-                            continue
-                        media = make_media(mess)
-                        if not media:
-                            edit_error = True
-                            continue
-                        bot.edit_message_media(media, my_chat_id,
-                                                  mess['tg_mess_id'])
-                    except Exception:
-                        edit_error = True
-                    
-                    db_mess_obj = user.upd_proces.db_mess_objs[tg_id]
-                    update_db_obj(db_mess_obj, mess) # TODO написать функцию в utils
-
-                #TODO сохранение, удаление в базу данных
-                if del_error or edit_error:
+                if not del_success or not upd_success:
                     context.append({'text': MESSAGES['renew_tg_error']})
         user.stop_upd()
     user.cmd_stack_pop()
