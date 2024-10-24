@@ -290,7 +290,7 @@ def apply_update(message):
             title_mess_content = user.upd_proces.title_mess_content
             if is_sending_as_new(original_blank, redacted_blank,
                         title_mess_content):
-                mess = adv_former(user.upd_proces)
+                mess = adv_former(user.upd_proces, insert_group_name=False)
                 sended_mess_objs = adv_sender(mess)
                 context = user.upd_proces.make_registration()
                 user.upd_proces.adv_blank = user.upd_proces.wrapp_blank()

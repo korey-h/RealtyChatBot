@@ -3,7 +3,7 @@ import db_models as dbm
 from copy import deepcopy
 from datetime import datetime as dt
 
-from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE,
+from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE, GROUP_TYPES,
                      MESS_TEMPLATES, MAX_IN_MEDIA)
 
 from typing import List, Union
@@ -60,7 +60,8 @@ def media_sorter(items: List[dict]) -> List[dict]:
     return result
 
 
-def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
+def adv_former(obj, template: str = MESS_TEMPLATES['adv_line'],
+               insert_group_name=True):
     adv_blank: dict = obj.adv_blank
     media_content = []
     single_texts = []
@@ -90,10 +91,14 @@ def adv_former(obj, template: str = MESS_TEMPLATES['adv_line']):
         if not value:
             continue
         if isinstance(value, dict):
-            obj.adv_f_send.append({'text': template.format(ABW[key], ' ')})
+            if insert_group_name:
+                obj.adv_f_send.append(
+                    {'text': template.format(ABW[key], ' ')})
             obj.adv_f_send.append(value)
         elif isinstance(value, (list, tuple)):
-            obj.adv_f_send.append({'text': template.format(ABW[key], ' ')})
+            if insert_group_name:
+                obj.adv_f_send.append(
+                    {'text': template.format(ABW[key], ' ')})
             out = media_sorter(value)
             if not out:
                 obj.adv_f_send.append({'text': 'пусто'})
@@ -420,3 +425,59 @@ def delete_messages(bot: TeleBot, chat_id: int, session: Session,
         dbm.AdditionalMessages.tg_mess_id.in_(deleted_ids)
         ).delete(synchronize_session='evaluate')
     return successful
+
+
+class SendingBlock():
+    title_variants: dict = GROUP_TYPES
+
+    def __init__(self, items: list, group_num:int, group_type: str):
+        
+        self.group_num = group_num
+        self.group_type = group_type
+        self.title = {}
+        self.items = self._sort_enumerate_items(items)
+    
+    def find_set_title(self, titles: dict=None) -> dict:
+
+        def _make_title(text: str) -> dict:
+            return {
+                'text': text,
+                'content_type': 'text',
+                'sequence_num': self.group_num,
+                'enclosure_num': 0,
+                }
+
+        if not titles:
+            text = self.title_variants.get(self.group_type)
+            title = _make_title(text)
+        else:        
+            title = titles.get(self.group_num)
+        self.title = title if title else _make_title(self.title_variants['universal'])
+    
+    def _sort_enumerate_items(self, items) -> list:
+        max_num = 0
+        no_number = []
+        numerated = []
+        for item in items:
+            enclosure_num = item.get('enclosure_num')
+            sequence_num = item.get('sequence_num')
+            if not sequence_num:
+                item['sequence_num'] = self.group_num
+            if not enclosure_num:
+                no_number.append(item)
+                continue
+            numerated.append(item)
+            if enclosure_num > max_num:
+                max_num = enclosure_num
+        numerated.sort(key=lambda n: n['enclosure_num'] )
+
+        for i, item in enumerate(no_number):
+            item['enclosure_num'] = max_num + i + 1
+        numerated.extend(no_number)
+
+        return numerated
+
+    def get_formated(self) -> list:
+        out = [self.title]
+        return out.extend(self.items)
+
