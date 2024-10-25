@@ -430,7 +430,7 @@ def delete_messages(bot: TeleBot, chat_id: int, session: Session,
 class SendingBlock():
     title_variants: dict = GROUP_TYPES
 
-    def __init__(self, items: list, group_num:int, group_type: str):
+    def __init__(self, items: List[dict], group_num:int, group_type: str):
         
         self.group_num = group_num
         self.group_type = group_type
@@ -440,6 +440,8 @@ class SendingBlock():
     def find_set_title(self, titles: dict=None) -> dict:
 
         def _make_title(text: str) -> dict:
+            if not text:
+                text = self.title_variants['universal']
             return {
                 'text': text,
                 'content_type': 'text',
@@ -447,14 +449,14 @@ class SendingBlock():
                 'enclosure_num': 0,
                 }
 
-        if not titles:
+        if not titles or not titles.get(self.group_num):
             text = self.title_variants.get(self.group_type)
             title = _make_title(text)
         else:        
             title = titles.get(self.group_num)
-        self.title = title if title else _make_title(self.title_variants['universal'])
+        self.title = title
     
-    def _sort_enumerate_items(self, items) -> list:
+    def _sort_enumerate_items(self, items: List[dict]) -> list:
         max_num = 0
         no_number = []
         numerated = []
@@ -478,6 +480,9 @@ class SendingBlock():
         return numerated
 
     def get_formated(self) -> list:
+        if not self.title:
+            self.find_set_title()
         out = [self.title]
-        return out.extend(self.items)
+        out.extend(self.items)
+        return out
 
