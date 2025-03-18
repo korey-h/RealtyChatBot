@@ -1,4 +1,5 @@
 import json
+import inspect
 import logging
 import os
 import sqlite3
@@ -22,7 +23,8 @@ import buttons as sb
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
 from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
-                   make_media, prepare_changed, reconst_blank, update_messages)
+                   make_media, prepare_changed, reconst_blank, update_messages,
+                   SendingBlock)
 
 if os.path.exists('.env'):
     load_dotenv('.env')
@@ -95,25 +97,39 @@ def try_exec_stack(message, user: User, data, **kwargs):
             reply_markup=sb.make_welcome_kbd())
 
 
-def send_multymessage(user_id, pre_mess: List[dict]):
+def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
     sent_messages = []
     for mess_data in pre_mess:
-        content_type = mess_data.pop('content_type', None) or 'text'
-        tg_mess_id = mess_data.pop('tg_mess_id', None)
+        if isinstance(mess_data, SendingBlock):
+            enclusive_data = mess_data.get_for_sending()
+            sent_part = send_multymessage(user_id, enclusive_data)
+            mess_data.set_ids(sent_part)
+            sent_messages.extend(sent_part)
+            continue
+
+        content_type = mess_data.get('content_type') or 'text'
+        # tg_mess_id = mess_data.pop('tg_mess_id', None)
+        ## добавить очистку от незнакомых методу полей: poped_keys = ['blank_line_name', 'sequence_num', 'enclosure_num']
         if content_type not in SEND_METHODS.keys():
             content_type = 'text'
         sender = SEND_METHODS[content_type]
-        sent_mess = sender(user_id, **mess_data)
+        args = inspect.getfullargspec(sender).args
+        sender_data = {}
+        for key, value in mess_data.items():
+            if key in args:
+                sender_data.update({key:value})
+        sent_mess = sender(user_id, message_thread_id=message_thread_id, **sender_data)
         sent_messages.append(sent_mess)
-        mess_data.update({'content_type': content_type, 'tg_mess_id': tg_mess_id})
+        # mess_data.update({'content_type': content_type, 'tg_mess_id': tg_mess_id})
 
     return sent_messages
 
 
-def adv_sender(mess, chat_id = my_chat_id, message_thread_id = my_thread_id):
-    for item in mess:
-        item.update({'message_thread_id': message_thread_id})
-    return send_multymessage(chat_id, mess)
+def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
+                message_thread_id: int = my_thread_id):
+    # for item in pre_mess:
+    #     item.update({'message_thread_id': message_thread_id})
+    return send_multymessage(chat_id, pre_mess, message_thread_id)
 
 
 
@@ -282,7 +298,7 @@ def apply_update(message):
 
     if cmd == redaction:
         if user.adv_proces:
-            user.stop_upd()
+            # user.stop_upd()
             context = user.adv_proces.repeat_last_step()
         else:
             redacted_blank = user.upd_proces.clear_deleted()
@@ -485,7 +501,12 @@ def inline_keys_exec(call):
     message = call.message
     user = get_user(message)
     data = json.loads(call.data)
-    try_exec_stack(message, user, data)
+    name = data.get('name')
+    if name and name == 'renew':
+        adv_ext_id = data.get('pld')
+        return find_mess_for_renew(message, user, adv_ext_id, **{'from':inline_keys_exec})
+    else:
+        try_exec_stack(message, user, data)
 
 
 ##################################################################

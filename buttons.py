@@ -72,6 +72,16 @@ def send_btn(*args, **kwargs):
     return InlineKeyboardMarkup().add(send_button, upd_button)
 
 
+def renew_btn(*args, **kwargs):
+    adv_blank_id = args[0]
+    renew_button = InlineKeyboardButton(
+        text=BUTTONS['renew'],
+        callback_data=json.dumps(
+            {'name': 'renew', 'pld': adv_blank_id}
+        ))
+    return InlineKeyboardMarkup().add(renew_button)
+
+
 def welcome_upd_butt(obj, *args, **kwargs):
     buttons = []
 

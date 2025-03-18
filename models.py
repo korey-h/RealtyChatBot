@@ -10,7 +10,7 @@ import text_generators as ttg
 
 from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
 from updater import DataRow, DataTable, Ref
-from utils import adv_former
+from utils import adv_former, SendingBlock
 
 
 class RegistrProces:
@@ -239,6 +239,7 @@ class RegistrProces:
         mess = ADV_MESSAGE['mess_adv_send'].format(self.adv_blank_id)
         return self.mess_wrapper([
             [mess, sb.make_welcome_kbd()],
+            [ADV_MESSAGE['mess_adv_send_p2'], sb.renew_btn(self.adv_blank_id)],
             ])
 
     def mess_wrapper(self, value) -> List[dict]:
@@ -257,12 +258,15 @@ class RegistrProces:
                 maker = data.get('kbd_maker')
                 keyboard = maker(self) if maker else None
                 if isinstance(text, (list, tuple)):
-                    for elem in text:
-                        pre_mess.append(elem)
-                    if pre_mess[-1].get('content_type') != 'media':
-                        pre_mess[-1]['reply_markup'] = keyboard
-                    else:
-                        pre_mess.append({'text': 'vvv', 'reply_markup': keyboard})
+                    # for elem in text:
+                    #     pre_mess.append(elem)
+                    pre_mess.extend(text)
+                    pre_mess.append({'text': 'vvv', 'reply_markup': keyboard})
+                    # if pre_mess[-1].get('content_type') != 'media':
+                    #     pre_mess[-1]['reply_markup'] = keyboard
+                    # else:
+                    #     pre_mess.append({'text': 'vvv', 'reply_markup': keyboard})
+                    
                 else:
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
             requirement = self._step_actions.get(value)
@@ -279,6 +283,9 @@ class RegistrProces:
         elif isinstance(value, (list, tuple)):
             pre_mess = []
             for data in value:
+                if isinstance(data, SendingBlock):
+                    pre_mess.append(data)
+                    continue
                 text = data[0]
                 keyboard = data[1]
                 pre_mess.append({'text': text, 'reply_markup': keyboard})
@@ -287,7 +294,8 @@ class RegistrProces:
         elif isinstance(value, dict):
             return [value]
         return [{'text': text, 'reply_markup': keyboard}]
-
+    
+### delete??
     def unwrapp_blank(self, blank: dict=None):
         new = {}
         blank = blank if blank else self.adv_blank
@@ -355,25 +363,25 @@ class RegUpdateProces(RegistrProces):
         keyboard = None
         text = None
         if isinstance(value, str):
-            pre_mess.append(
-                {'text': value, 'reply_markup': keyboard}
-                )  
+            pre_mess.append({'text': value, 'reply_markup': keyboard})  
         elif isinstance(value, (list, tuple)):
             for elem in value:
                 if callable(elem):
                     pre_mess.append(elem(self))
-                    continue
                 elif isinstance(elem, dict):
                     text = elem['text']
                     if callable(text):
                         text = text(self)
                     maker = elem.get('kbd_maker')
                     keyboard = maker(self) if maker else None
+                    pre_mess.append({'text': text, 'reply_markup': keyboard})
+                elif isinstance(elem, (list, tuple)):
+                    text = elem[0]
+                    keyboard = elem[1]
+                    pre_mess.append({'text': text, 'reply_markup': keyboard})
                 else:
                     text = elem
-                pre_mess.append(
-                    {'text': text, 'reply_markup': keyboard}
-                    )
+                    pre_mess.append({'text': text, 'reply_markup': keyboard})
         return pre_mess                   
     
     def step_handler(self, data, mess_obj=None, ) -> List[dict]:
@@ -465,7 +473,8 @@ class RegUpdateProces(RegistrProces):
         self.butt_table.null(self.step)
         self._set_nondeleted_step() 
         return self.mess_wrapper(ADV_MESSAGE['del_complete'])
-   
+    
+   ## удалить?
     def wrapp_blank(self):
         new = {}
         for key, value in self.adv_blank.items():
@@ -481,7 +490,7 @@ class RegUpdateProces(RegistrProces):
                 new.update(value)
         return new             
 
-    def clear_deleted(self):
+    def clear_deleted(self): ### проверить необходимость или расширить условия проверки
         for key, item in self.adv_blank.items():
             if not isinstance(item, (list, tuple)):
                 continue
@@ -544,9 +553,9 @@ class User:
         self.adv_proces = self.adv_proces_class()
         return
     
-    def start_update(self, blank: dict, tg_mess_ids: list, adv_blank_id: str,
+    def start_update(self, adv_blank: dict, adv_blank_id: str, tg_mess_ids: list =[],
                      db_mess_objs: dict = {} ):
-        adv_blank = self.adv_proces_class().unwrapp_blank(blank)
+        # adv_blank = self.adv_proces_class().unwrapp_blank(blank)
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
         self.upd_proces.tg_mess_ids = tg_mess_ids
@@ -556,8 +565,10 @@ class User:
     def update_advert(self):
         # from fixtures import test_blank
         # blank = test_blank()
-        blank = self.adv_proces.unwrapp_blank()
-        self.upd_proces = self.adv_update_class(blank)
+
+        # blank = self.adv_proces.unwrapp_blank()
+
+        self.upd_proces = self.adv_update_class(self.adv_proces.adv_blank)
         return
 
     def stop_advert(self):
@@ -566,6 +577,7 @@ class User:
 
     def stop_upd(self):
         if self.adv_proces:
-            self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
+            # self.adv_proces.adv_blank = self.upd_proces.wrapp_blank()
+            self.adv_proces.adv_blank = self.upd_proces.adv_blank
         self.upd_proces = None
         return

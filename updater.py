@@ -6,10 +6,10 @@ from utils import review_elem
 
 
 # -------------------------------------
-elem_group_mess = [
+ELEM_GROUP_MESS = [
     {'text': 'Выберите, что нужно заменить:',
      'kbd_maker': elements_butt}]
-uno_elem_mess = [review_elem, {'text': ttg.text_uno_elem}]
+UNO_ELEM_MESS = [review_elem, {'text': ttg.text_uno_elem}]
 # -------------------------------------
 
 
@@ -20,27 +20,50 @@ class Ref:
     
     @property
     def val(self):
-        return self.__node[self.__key]
+        record = self.__node[self.__key]
+        if isinstance(record, list):
+            return record
+        elif isinstance(record, dict):
+            cursor = record['content_type']
+            return record[cursor]
     
     @val.setter
     def val(self, value):
-        self.__node[self.__key] = value
-    
+        record = self.__node[self.__key]
+        if isinstance(record, list):
+            self.__node[self.__key] = value
+        if isinstance(record, dict):
+            cursor = record['content_type']
+            record[cursor] = value
+
+    @property
+    def raw(self):
+        return self.__node[self.__key]
+
     def null(self):
-        rec = self.__node[self.__key]
-        if isinstance(rec, int):
-            rec = 0
-        elif isinstance(rec, str):
-            rec = '--'
-        elif isinstance(rec,list):
-            rec = [None for _ in rec]
-            # rec = []
+        record = self.__node[self.__key]
+        if isinstance(record, int):
+            record = 0
+        elif isinstance(record, str):
+            record = '--'
+        elif isinstance(record, dict):
+            cursor = record['content_type']
+            record[cursor] = None
+        elif isinstance(record, list):
+            record = [None for _ in record]
         else:
-            rec = None
-        self.__node[self.__key] = rec
+            record = None
+        self.__node[self.__key] = record
     
     def __str__(self):
-        return 'ref:' + str(self.__node[self.__key])
+        record = self.__node[self.__key]
+        content = str(record)
+        if isinstance(record, dict):
+            cursor = record['content_type']
+            content = str(record[cursor])
+        elif isinstance(record, list):
+            content = str(record[0]) + '...'
+        return 'ref:' + content
 
 
 class DataRow:
@@ -152,9 +175,10 @@ class DataTable:
             validator = validators.get(key) if validators else None
             message = messages.get(key) if messages else None
             if message and isinstance(value, list):
-                message.extend(elem_group_mess)
-            elif message and isinstance(value, (int, str)):
-                message.extend(uno_elem_mess)
+                message.extend(ELEM_GROUP_MESS)
+            # elif message and isinstance(value, (int, str)):
+            elif message and isinstance(value, dict):
+                message.extend(UNO_ELEM_MESS)
             row = DataRow(value=rec, vtype=None, name=key, message=message,
                           validator=validator)
             row_id = self.add(row)
@@ -196,7 +220,7 @@ class DataTable:
         for elem in group[point::]:
             num += 1
             row = DataRow(value=elem, vtype=gtype, parent=parent, name=num,
-                          message=uno_elem_mess)
+                          message=UNO_ELEM_MESS)
             elem_id = self.add(row)
             ids.append(elem_id)
         return ids
@@ -212,7 +236,7 @@ class DataTable:
 
             for gtype, group in groups.items():
                 row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
-                              message=elem_group_mess)
+                              message=ELEM_GROUP_MESS)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)
