@@ -39,6 +39,22 @@ class Ref:
     @property
     def raw(self):
         return self.__node[self.__key]
+    
+    # @property
+    # def vtype(self):
+    #     record = self.__node[self.__key]
+    #     return record['content_type']
+    
+    def update_raw(self, data: dict):
+        record = self.__node[self.__key]
+        if not isinstance(record, dict):
+            print('Операция доступна только для значений типа Dictionary.')
+            return
+        if not (set(data.keys()) <= set(record.keys())):
+            print('Недопустимо. Предложенные для обновления типы параметров отсутствуют обновляемой записи.')
+            return
+        for key, value in data.items():
+            record[key] = value
 
     def null(self):
         record = self.__node[self.__key]

@@ -99,6 +99,7 @@ def welcome_upd_butt(obj, *args, **kwargs):
 
 def elements_butt(obj, *args, **kwargs):
     row = obj.butt_table.get(obj.step)
+    # if not isinstance(row.value, list):
     if (not isinstance(row.value, list) and
             not isinstance(row.value.val, list)):
         return
@@ -112,7 +113,9 @@ def elements_butt(obj, *args, **kwargs):
     buttons = []
     for el_id in ids_for_out:
         el = obj.butt_table.get(el_id)
-        if el is None or el.value is None:
+        if el is None:
+            continue
+        if el.value is None:
             continue
         button = InlineKeyboardButton(
         text=el.title,

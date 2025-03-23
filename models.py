@@ -384,7 +384,7 @@ class RegUpdateProces(RegistrProces):
                     pre_mess.append({'text': text, 'reply_markup': keyboard})
         return pre_mess                   
     
-    def step_handler(self, data, mess_obj=None, ) -> List[dict]:
+    def step_handler(self, data, mess_obj ) -> List[dict]:
         pre_mess = []
         if data is None:
             if self.step == 0:
@@ -403,22 +403,20 @@ class RegUpdateProces(RegistrProces):
                 self._set_nondeleted_step()
                 row = self.butt_table.get(self.step)
             if (isinstance(row.value, Ref) and 
-                    isinstance(row.value.val, (int, str))):
-                validator = row.validator
-                if validator:
-                    res = validator(data)
-                    if res['error']:
-                        return self.mess_wrapper(res['error'])
-                    data = res['data']                
-                row.value.val = data
-            
-            elif (isinstance(row.value, Ref) and 
-                    isinstance(row.value.val, dict) and mess_obj):
-                data = self._pars_mess_obj(mess_obj)
-                row.value.val.update(data)
+                    isinstance(row.value.val, dict)):
+                if row.value.raw['content_type'] == 'text':
+                    validator = row.validator
+                    if validator:
+                        res = validator(data)
+                        if res['error']:
+                            return self.mess_wrapper(res['error'])
+                    row.value.val = res['data']
+                else:
+                    data = self._pars_mess_obj(mess_obj)
+                    row.value.update_raw(data)
                   
-            elif (isinstance(row.value, list) or
-                    isinstance(row.value.val, list)) and mess_obj:
+            elif (isinstance(row.value, list) or 
+                    isinstance(row.value.val, list)):
                 data = self._pars_mess_obj(mess_obj)                
                 root = self.butt_table.get_root(row)
                 root.value.val.append(data)
@@ -558,9 +556,9 @@ class User:
         # adv_blank = self.adv_proces_class().unwrapp_blank(blank)
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
-        self.upd_proces.tg_mess_ids = tg_mess_ids
+        # self.upd_proces.tg_mess_ids = tg_mess_ids
         self.upd_proces.original_blank = deepcopy(adv_blank)
-        self.upd_proces.db_mess_objs = db_mess_objs
+        # self.upd_proces.db_mess_objs = db_mess_objs
 
     def update_advert(self):
         # from fixtures import test_blank

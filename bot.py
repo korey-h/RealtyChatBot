@@ -102,6 +102,8 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
     for mess_data in pre_mess:
         if isinstance(mess_data, SendingBlock):
             enclusive_data = mess_data.get_for_sending()
+            if not enclusive_data:
+                continue
             sent_part = send_multymessage(user_id, enclusive_data)
             mess_data.set_ids(sent_part)
             sent_messages.extend(sent_part)
@@ -291,7 +293,7 @@ def cancel_all(message):
 @bot.message_handler(commands=[BUTTONS['apply']])
 def apply_update(message):
     user = get_user(message)
-    cmd = user.get_cmd_stack()['cmd']
+    cmd = user.get_cmd_stack()['cmd'] # TODO если процессы не запущены команда /Применить вызывает ошибку
     context = [{'text': MESSAGES['renew_finished']}]
     del_success = True
     upd_success = True
@@ -301,7 +303,8 @@ def apply_update(message):
             # user.stop_upd()
             context = user.adv_proces.repeat_last_step()
         else:
-            redacted_blank = user.upd_proces.clear_deleted()
+            # redacted_blank = user.upd_proces.clear_deleted()
+            redacted_blank = user.upd_proces.adv_blank
             original_blank = user.upd_proces.original_blank
             title_mess_content = user.upd_proces.title_mess_content
             if is_sending_as_new(original_blank, redacted_blank,
@@ -309,13 +312,12 @@ def apply_update(message):
                 mess = adv_former(user.upd_proces, insert_group_name=False)
                 sended_mess_objs = adv_sender(mess)
                 context = user.upd_proces.make_registration()
-                user.upd_proces.adv_blank = user.upd_proces.wrapp_blank()
+                # user.upd_proces.adv_blank = user.upd_proces.wrapp_blank()
                 adv_to_db(user, SESSION, sended_mess_objs)
                 #TODO создать таблицу для связей нового и старого adv_blank_id
             else:
                 res = prepare_changed(original_blank, redacted_blank,
-                        title_mess_content,
-                        user.upd_proces.tg_mess_ids)
+                        title_mess_content,)
                 deleted_ids = list(res['deleted'].keys())
                 if deleted_ids:
                     del_success = delete_messages(bot, my_chat_id, SESSION,
@@ -326,7 +328,7 @@ def apply_update(message):
                 if changed:
                     db_mess_objs = user.upd_proces.db_mess_objs
                     upd_success = update_messages(bot, my_chat_id, SESSION,
-                                                  changed, title_raw, db_mess_objs)
+                                                  changed, title_raw, db_mess_objs )
 
                 if not del_success or not upd_success:
                     context.append({'text': MESSAGES['renew_tg_error']})
@@ -470,8 +472,11 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
             text=MESSAGES['redact_too_often'])       
 
     blank_template = RegistrProces().adv_blank.copy()
-    adv_blank, tg_mess_ids, db_mess_objs = reconst_blank(title_message, blank_template)
-    user.start_update(adv_blank, tg_mess_ids, data, db_mess_objs)
+    title_mess_content = RegistrProces().title_mess_content
+    # adv_blank, tg_mess_ids, db_mess_objs = reconst_blank(title_message, blank_template)
+    adv_blank, db_mess_objs = reconst_blank(title_message, blank_template, title_mess_content)
+    # user.start_update(adv_blank, tg_mess_ids, data, db_mess_objs)
+    user.start_update(adv_blank, data, db_mess_objs)
     user.cmd_stack_pop()
     redaction(message, user, **{'from': 'find_mess_for_renew'})
 

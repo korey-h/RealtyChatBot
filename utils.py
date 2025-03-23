@@ -120,7 +120,7 @@ def review_elem(obj) -> dict:
     # elif isinstance(value, (int, str)):
     #     mess = {'text': ADV_MESSAGE['before'] + str(value)}
     if value['content_type'] == 'text':
-        text = value['text']
+        text = str(value['text'])
         if not text:
             text = '---'
         mess = {
@@ -147,41 +147,42 @@ def get_or_create(session, model, create_params: dict,
         return instance
 
 
-def reconst_blank(title_message, blank_template: dict) -> Union[dict, list]:
-    composit_items = []
-    db_mess_objs = {}
-    for key, value in blank_template.items():
-        if isinstance(value, (list, tuple)):
-            composit_items.append(key)
-            continue
-        if hasattr(title_message, key):
-            blank_template[key] = getattr(title_message, key)
-    title_mess_id = int(title_message.tg_mess_id)
-    tg_mess_ids = [title_mess_id]
-    db_mess_objs[title_mess_id] = title_message
+def reconst_blank(title_message, blank_template: dict, title_mess_content: list) -> Union[dict, list]:
+    return reconst_blank2(title_message, blank_template, title_mess_content)
+    # composit_items = []
+    # db_mess_objs = {}
+    # for key, value in blank_template.items():
+    #     if isinstance(value, (list, tuple)):
+    #         composit_items.append(key)
+    #         continue
+    #     if hasattr(title_message, key):
+    #         blank_template[key] = getattr(title_message, key)
+    # title_mess_id = int(title_message.tg_mess_id)
+    # tg_mess_ids = [title_mess_id]
+    # db_mess_objs[title_mess_id] = title_message
 
-    other = composit_items[0] if composit_items else None
-    if other:
-        container = blank_template[other]
-        additional_messages = title_message.additional_messages
+    # other = composit_items[0] if composit_items else None
+    # if other:
+    #     container = blank_template[other]
+    #     additional_messages = title_message.additional_messages
 
-        #TODO выполнить сортировку внутри additional_messages по
-        #sequence_num и enclousere num
+    #     #TODO выполнить сортировку внутри additional_messages по
+    #     #sequence_num и enclousere num
 
-        for mess in additional_messages:
-            mess_value = mess.content_text
-            tg_mess_id = int(mess.tg_mess_id)
-            db_mess_objs[tg_mess_id] = mess
-            reconst_mess = {
-                'content_type': mess.mess_type,
-                mess.mess_type: mess_value,
-                'tg_mess_id': tg_mess_id,
-            }
-            if mess.mess_type != 'text':
-                reconst_mess.update({'caption': mess.caption})
-            container.append(reconst_mess)
-            tg_mess_ids.append(mess.tg_mess_id)
-    return blank_template, tg_mess_ids, db_mess_objs
+    #     for mess in additional_messages:
+    #         mess_value = mess.content_text
+    #         tg_mess_id = int(mess.tg_mess_id)
+    #         db_mess_objs[tg_mess_id] = mess
+    #         reconst_mess = {
+    #             'content_type': mess.mess_type,
+    #             mess.mess_type: mess_value,
+    #             'tg_mess_id': tg_mess_id,
+    #         }
+    #         if mess.mess_type != 'text':
+    #             reconst_mess.update({'caption': mess.caption})
+    #         container.append(reconst_mess)
+    #         tg_mess_ids.append(mess.tg_mess_id)
+    # return blank_template, tg_mess_ids, db_mess_objs
 
 
 
@@ -299,7 +300,7 @@ def make_title_f_blank(proces_obj, template: str = MESS_TEMPLATES['adv_line']):
     title = {'content_type': 'text', 'text': title_mess, }
     return SendingBlock(
             [title],
-            blank_line_name=0,
+            blank_line_name='title',
             group_num=0,
             group_type='text',
             ignore_title=True)
@@ -337,6 +338,9 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
                 _catch_message(item)
             elif isinstance(item, list):
                 for subitem in item:
+                    subitem_type = subitem['content_type']
+                    if subitem is None or subitem[subitem_type] is None:
+                        continue
                     _catch_message(subitem)
         return ids_messages, new                   
 
@@ -395,13 +399,13 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
     #         additional_item_keys.append(key)
     #     return additional_item_keys
     
-    def _group_by_type(items: list) -> dict:
+    def _count_by_type(items: list) -> dict:
         by_type_counter = {}
         for item in items:
-            if not item:
+            if item is None:
                 continue
             item_type = item['content_type']
-            if not item[item_type]:
+            if item[item_type] is None:
                 continue
             by_type_counter.setdefault(item_type,0)
             by_type_counter[item_type] += 1
@@ -429,8 +433,8 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
     
     for key, value in original_blank.items():
         if isinstance(value,(list, tuple)):
-            orig_types = _group_by_type(value)
-            red_types = _group_by_type(redacted_blank[key])
+            orig_types = _count_by_type(value)
+            red_types = _count_by_type(redacted_blank[key])
             orig_keys =  set(orig_types.keys())
             red_keys = set(red_types.keys())
             if red_keys.difference(orig_keys):
@@ -454,7 +458,7 @@ def make_media(mess: dict):
     return media_class(media=mess[content_type])
 
 
-def update_db_obj(db_mess_objs, tg_id: int, mess: dict):
+def update_db_obj(db_mess_objs: Union[TitleMessages, AdditionalMessages], tg_id: int, mess: dict):
     obj = db_mess_objs.get(tg_id)
     if not obj:
         return
@@ -523,7 +527,7 @@ class SendingBlock():
         self.group_type = group_type
         self.max_len_text = max_len_text
         self.title = title if title else self._make_title()
-        self.items: dict = self._sort_enumerate_items(items)
+        self.items: list = self._sort_enumerate_items(items)
         self.ignore_title = ignore_title
         self.formated = []
         self.media_extra_args = {}
@@ -561,13 +565,21 @@ class SendingBlock():
 
     def _sort_enumerate_items(self, items: List[dict]) -> list:
         if self.group_type == 'text':
-            items = self._combine_texts(items)
+            cleaned = self._exclude_title(items)
+            if not cleaned:
+                return []
+            items = self._combine_texts(cleaned)
         max_num = 0
         no_number = []
         numerated = []
         for item in items:
-            enclosure_num = item.get('enclosure_num')
+            if not item or item['content_type'] is None:
+                continue
             sequence_num = item.get('sequence_num')
+            enclosure_num = item.get('enclosure_num')
+            # if enclosure_num == 0:
+            #     self.title = item
+            #     continue
             if not sequence_num:
                 item['sequence_num'] = self.group_num
             if not enclosure_num:
@@ -597,7 +609,15 @@ class SendingBlock():
             if rest:
                 out.append({'content_type': 'media', 'media': rest})
         return out
-    
+
+    def _exclude_title(self, items: List[dict]):
+        cleaned = []
+        for item in items:
+            if item.get('enclosure_num') == 0:
+                continue
+            cleaned.append(item)
+        return cleaned
+
     def _combine_texts(self, texts: List[dict]) -> List[dict]:
         texts = self._divide_single_text(texts)
         parts = []
@@ -786,6 +806,9 @@ def adv_former2(obj):
 
 def reconst_blank2(title_message:TitleMessages, blank_template: dict,
                    title_mess_content: list) -> Union[dict, list]:
+    
+    title_mess_id = int(title_message.tg_mess_id)
+    db_mess_objs = {title_mess_id:title_message, }
     for key in title_mess_content:
         blank_template[key] = {
             'content_type': 'text',
@@ -797,6 +820,8 @@ def reconst_blank2(title_message:TitleMessages, blank_template: dict,
     additional_messages: List[AdditionalMessages] = title_message.additional_messages
     container = {}
     for mess in additional_messages:
+        tg_mess_id = int(mess.tg_mess_id)
+        db_mess_objs[tg_mess_id] = mess
         blank_line_name = mess.blank_line_name
         if not container.get(blank_line_name):
             container[blank_line_name] = []
@@ -817,4 +842,4 @@ def reconst_blank2(title_message:TitleMessages, blank_template: dict,
             )
         blank_template[key] = value
     
-    return blank_template
+    return blank_template, db_mess_objs

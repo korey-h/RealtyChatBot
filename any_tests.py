@@ -176,7 +176,7 @@ def test_sorting_mess():
 
 if __name__ == '__main__':
     # test_is_sending_as_new()
-    test_prepare_changed()
-    # test_sending_block()
+    # test_prepare_changed()
+    test_sending_block()
     # test_make_title()
     # test_sending_text_block()
