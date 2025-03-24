@@ -68,7 +68,8 @@ class TitleMessages(Base):
             db_key = tg_db_translater.get(key)
             if not db_key:
                 continue
-            setattr(self, db_key, value)
+            vtype = value['content_type']
+            setattr(self, db_key, value[vtype])
 
 class AdditionalMessages(Base):
     __tablename__ = 'additional_messages'

@@ -474,9 +474,11 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
     blank_template = RegistrProces().adv_blank.copy()
     title_mess_content = RegistrProces().title_mess_content
     # adv_blank, tg_mess_ids, db_mess_objs = reconst_blank(title_message, blank_template)
-    adv_blank, db_mess_objs = reconst_blank(title_message, blank_template, title_mess_content)
+    adv_blank, db_mess_objs = reconst_blank(title_message, blank_template,
+                                            title_mess_content)
     # user.start_update(adv_blank, tg_mess_ids, data, db_mess_objs)
-    user.start_update(adv_blank, data, db_mess_objs)
+    user.start_update(adv_blank=adv_blank, adv_blank_id=data,
+                      db_mess_objs=db_mess_objs)
     user.cmd_stack_pop()
     redaction(message, user, **{'from': 'find_mess_for_renew'})
 

@@ -807,7 +807,7 @@ def adv_former2(obj):
 def reconst_blank2(title_message:TitleMessages, blank_template: dict,
                    title_mess_content: list) -> Union[dict, list]:
     
-    title_mess_id = int(title_message.tg_mess_id)
+    title_mess_id = title_message.tg_mess_id
     db_mess_objs = {title_mess_id:title_message, }
     for key in title_mess_content:
         blank_template[key] = {

@@ -403,7 +403,7 @@ class RegUpdateProces(RegistrProces):
                 self._set_nondeleted_step()
                 row = self.butt_table.get(self.step)
             if (isinstance(row.value, Ref) and 
-                    isinstance(row.value.val, dict)):
+                    isinstance(row.value.val, (int, str))):
                 if row.value.raw['content_type'] == 'text':
                     validator = row.validator
                     if validator:
@@ -551,14 +551,14 @@ class User:
         self.adv_proces = self.adv_proces_class()
         return
     
-    def start_update(self, adv_blank: dict, adv_blank_id: str, tg_mess_ids: list =[],
-                     db_mess_objs: dict = {} ):
+    def start_update(self, adv_blank: dict, adv_blank_id: str,
+                     db_mess_objs: dict ):
         # adv_blank = self.adv_proces_class().unwrapp_blank(blank)
         self.upd_proces = self.adv_update_class(adv_blank)
         self.upd_proces.adv_blank_id = adv_blank_id
         # self.upd_proces.tg_mess_ids = tg_mess_ids
         self.upd_proces.original_blank = deepcopy(adv_blank)
-        # self.upd_proces.db_mess_objs = db_mess_objs
+        self.upd_proces.db_mess_objs = db_mess_objs
 
     def update_advert(self):
         # from fixtures import test_blank
