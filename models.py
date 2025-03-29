@@ -362,12 +362,20 @@ class RegUpdateProces(RegistrProces):
         pre_mess = []
         keyboard = None
         text = None
+        if callable(value):
+            value = value(self)
         if isinstance(value, str):
             pre_mess.append({'text': value, 'reply_markup': keyboard})  
         elif isinstance(value, (list, tuple)):
             for elem in value:
                 if callable(elem):
-                    pre_mess.append(elem(self))
+                    generated_pre_mess = elem(self)
+                    if not generated_pre_mess:
+                        continue
+                    if isinstance(generated_pre_mess, (list, tuple)):
+                        pre_mess.extend(generated_pre_mess)
+                    else:
+                        pre_mess.append(generated_pre_mess)
                 elif isinstance(elem, dict):
                     text = elem['text']
                     if callable(text):
@@ -393,7 +401,7 @@ class RegUpdateProces(RegistrProces):
             row_id = data['pld']
             self.step = row_id
             rec = self.butt_table.get(row_id)
-            if rec and rec.value is not None:
+            if rec and rec.value:
                 pre_mess.extend(self.mess_wrapper(rec.message))
             else:
                 pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_deleted']))
@@ -410,7 +418,9 @@ class RegUpdateProces(RegistrProces):
                         res = validator(data)
                         if res['error']:
                             return self.mess_wrapper(res['error'])
-                    row.value.val = res['data']
+                        else:
+                            data = res['data']
+                    row.value.val = data
                 else:
                     data = self._pars_mess_obj(mess_obj)
                     row.value.update_raw(data)

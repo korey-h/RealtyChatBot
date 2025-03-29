@@ -6,9 +6,15 @@ from utils import review_elem
 
 
 # -------------------------------------
-ELEM_GROUP_MESS = [
-    {'text': 'Выберите, что нужно заменить:',
-     'kbd_maker': elements_butt}]
+def gen_mess_for_group(obj) -> list:
+    keyboard = elements_butt(obj)
+    if not keyboard:
+        return []
+    return [{'text': 'Выберите, что нужно заменить:',
+             'reply_markup': keyboard}]
+# ELEM_GROUP_MESS = [
+#     {'text': 'Выберите, что нужно заменить:',
+#      'kbd_maker': elements_butt}]
 UNO_ELEM_MESS = [review_elem, {'text': ttg.text_uno_elem}]
 # -------------------------------------
 
@@ -191,7 +197,8 @@ class DataTable:
             validator = validators.get(key) if validators else None
             message = messages.get(key) if messages else None
             if message and isinstance(value, list):
-                message.extend(ELEM_GROUP_MESS)
+                # message.extend(ELEM_GROUP_MESS)
+                message.append(gen_mess_for_group)
             # elif message and isinstance(value, (int, str)):
             elif message and isinstance(value, dict):
                 message.extend(UNO_ELEM_MESS)
@@ -251,8 +258,10 @@ class DataTable:
                 type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
+                # row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
+                #               message=ELEM_GROUP_MESS)
                 row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
-                              message=ELEM_GROUP_MESS)
+                              message=gen_mess_for_group)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)

@@ -5,7 +5,6 @@ from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
 
 from config import BUTTONS, KEYWORDS
 
-
 def name_to_cmd(names):
     return ['/' + name for name in names]
 
@@ -107,21 +106,27 @@ def elements_butt(obj, *args, **kwargs):
     if not ids_for_out:
         return
     elif len(ids_for_out) == 1:
-        ids_in_group = obj.butt_table.relations.get(ids_for_out[0])        
+        ids_in_group = obj.butt_table.relations.get(ids_for_out[0])
         ids_for_out = ids_in_group if ids_in_group else ids_for_out
     
     buttons = []
     for el_id in ids_for_out:
         el = obj.butt_table.get(el_id)
-        if el is None:
+        if not el or not el.value:
             continue
-        if el.value is None:
-            continue
+        if not isinstance(el.value, (str,list)): 
+            try:
+                if el.value.raw.get('enclosure_num') == 0:
+                    continue
+            except:
+                pass
         button = InlineKeyboardButton(
         text=el.title,
         callback_data=json.dumps(
             {'name': 'update', 'pld': el.id}))
         buttons.append(button)
+    if not buttons:
+        return
     return InlineKeyboardMarkup().add(*buttons)
 
 
