@@ -98,7 +98,6 @@ def welcome_upd_butt(obj, *args, **kwargs):
 
 def elements_butt(obj, *args, **kwargs):
     row = obj.butt_table.get(obj.step)
-    # if not isinstance(row.value, list):
     if (not isinstance(row.value, list) and
             not isinstance(row.value.val, list)):
         return
@@ -121,8 +120,8 @@ def elements_butt(obj, *args, **kwargs):
             except:
                 pass
         button = InlineKeyboardButton(
-        text=el.title,
-        callback_data=json.dumps(
+            text=el.title,
+            callback_data=json.dumps(
             {'name': 'update', 'pld': el.id}))
         buttons.append(button)
     if not buttons:

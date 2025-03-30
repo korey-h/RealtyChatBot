@@ -15,118 +15,18 @@ from telebot.types import (InputMediaAudio, InputMediaDocument,
 from db_models import TitleMessages, AdditionalMessages
 
 
-def media_sorter(items: List[dict]) -> List[dict]:
-    media_items = {
-        'audio': [],
-        'video': [],
-        'document': [],
-        'photo': []
-    }
-    input_media_class = {
-        'audio': InputMediaAudio,
-        'document': InputMediaDocument,
-        'photo':  InputMediaPhoto,
-        'video': InputMediaVideo
-    }
-
-    another_items = []
-    result = []
-    for item in items:
-        content_type = item['content_type']
-        if content_type in media_items.keys():
-            class_type = input_media_class[content_type]
-            media_items[content_type].append(
-                class_type(
-                    media=item[content_type],
-                    caption=item['caption']
-                )
-            )
-        else:
-            another_items.append(item)
-    
-    for value in media_items.values():
-        if not value:
-            continue
-        amount = len(value)
-        if amount <= MAX_IN_MEDIA:
-            result.append({'content_type': 'media', 'media': value})
-        else:
-            for i in range(MAX_IN_MEDIA, amount, MAX_IN_MEDIA):
-                elements = value[i - MAX_IN_MEDIA : i]
-                result.append({'content_type': 'media', 'media': elements})
-            rest = value[i : amount]
-            if rest:
-                result.append({'content_type': 'media', 'media': rest})
-
-    result.extend(another_items)
-    return result
-
-
-def adv_former(obj, template: str = MESS_TEMPLATES['adv_line'],
-               insert_group_name=True):
-    return adv_former2(obj)
-    adv_blank: dict = obj.adv_blank
-    media_content = []
-    single_texts = []
-    obj.adv_f_send = []
-    text = ''
-    for key, value in adv_blank.items():
-        if isinstance(value, (list, tuple)):
-            media_content.append({key:value})
-            continue
-        elif isinstance(value, dict):
-            if value['content_type'] == 'text':
-                if key in obj.title_mess_content:
-                    value = value['text']
-                else:
-                    value = '-' if not value else str(value)
-                    single_texts.append({key:value})
-            else:
-                media_content.append({key:value})
-                continue     
-        value = '-' if not value else str(value)
-        text += template.format(ABW[key], value)
-    obj.adv_f_send.append({'text': text})
-    obj.adv_f_send.extend(single_texts)
-    
-    for unit in media_content:
-        key, value = list(unit.items())[0]
-        if not value:
-            continue
-        if isinstance(value, dict):
-            if insert_group_name:
-                obj.adv_f_send.append(
-                    {'text': template.format(ABW[key], ' ')})
-            obj.adv_f_send.append(value)
-        elif isinstance(value, (list, tuple)):
-            if insert_group_name:
-                obj.adv_f_send.append(
-                    {'text': template.format(ABW[key], ' ')})
-            out = media_sorter(value)
-            if not out:
-                obj.adv_f_send.append({'text': 'пусто'})
-            else:
-                obj.adv_f_send.extend(out)
-        
-    return deepcopy(obj.adv_f_send)
-
-
 def review_elem(obj) -> dict:
     mess = {'text': '.'}
     row = obj.butt_table.get(obj.step)
     value = row.value.raw
-    # if isinstance(value, dict):
-    #     mess = value
-    # elif isinstance(value, (int, str)):
-    #     mess = {'text': ADV_MESSAGE['before'] + str(value)}
+
     if value['content_type'] == 'text':
         text = str(value['text'])
         if not text:
             text = '---'
         mess = {
             'content_type': 'text',
-            'text': ADV_MESSAGE['before'] + text,
-        }
+            'text': ADV_MESSAGE['before'] + text,}
     else:
         mess = value
 
@@ -147,45 +47,6 @@ def get_or_create(session, model, create_params: dict,
         return instance
 
 
-def reconst_blank(title_message, blank_template: dict, title_mess_content: list) -> Union[dict, list]:
-    return reconst_blank2(title_message, blank_template, title_mess_content)
-    # composit_items = []
-    # db_mess_objs = {}
-    # for key, value in blank_template.items():
-    #     if isinstance(value, (list, tuple)):
-    #         composit_items.append(key)
-    #         continue
-    #     if hasattr(title_message, key):
-    #         blank_template[key] = getattr(title_message, key)
-    # title_mess_id = int(title_message.tg_mess_id)
-    # tg_mess_ids = [title_mess_id]
-    # db_mess_objs[title_mess_id] = title_message
-
-    # other = composit_items[0] if composit_items else None
-    # if other:
-    #     container = blank_template[other]
-    #     additional_messages = title_message.additional_messages
-
-    #     #TODO выполнить сортировку внутри additional_messages по
-    #     #sequence_num и enclousere num
-
-    #     for mess in additional_messages:
-    #         mess_value = mess.content_text
-    #         tg_mess_id = int(mess.tg_mess_id)
-    #         db_mess_objs[tg_mess_id] = mess
-    #         reconst_mess = {
-    #             'content_type': mess.mess_type,
-    #             mess.mess_type: mess_value,
-    #             'tg_mess_id': tg_mess_id,
-    #         }
-    #         if mess.mess_type != 'text':
-    #             reconst_mess.update({'caption': mess.caption})
-    #         container.append(reconst_mess)
-    #         tg_mess_ids.append(mess.tg_mess_id)
-    # return blank_template, tg_mess_ids, db_mess_objs
-
-
-
 def adv_to_db(user, session: Session, sended_mess_objs: list):
     # user - это объект из модуля models.py
     db_user = get_or_create(
@@ -204,15 +65,10 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
         if key not in title_mess_content:
             continue
         to_title_mess.update({key: item['text']})
-        #     data_key = adv_blank[key]['content_type']
-        #     data = adv_blank[key][data_key]
-        #     to_title_mess.update({key: data})
     
     current_datetime = dt.now()
-    sended_title_mess = sended_mess_objs[0]
     title_mess_tg_id = adv_f_send[0].items[0]['tg_mess_id']
     title_message = dbm.TitleMessages(
-        # tg_mess_id = sended_title_mess.id,
         tg_mess_id = title_mess_tg_id,
         time=current_datetime,
         mess_type='text',
@@ -221,45 +77,8 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
     )
     session.add(title_message)
     session.commit()
-
     objs_for_db = []
 
-    def _add_additional_message(mess_obj, conteiner:list,
-                                sequence_num:int, enclosure_num:int):
-        LINKED_TYPES = ('audio', 'voice', 'video', 'document', 'sticker')
-        mess_type=mess_obj.content_type
-        content_text = ''
-        if mess_type == 'text':
-            content_text = mess_obj.text
-        elif mess_type == 'photo':
-            content_text = mess_obj.photo[-1].file_id
-        elif mess_type in LINKED_TYPES:
-            content_text = getattr(mess_obj, mess_type).file_id
-
-        additional_message = dbm.AdditionalMessages(
-            tg_mess_id = mess_obj.id,
-            time=current_datetime,
-            mess_type=mess_type,
-            caption=mess_obj.caption,
-            content_text=content_text,
-            title_message_id=title_message.id,
-            sequence_num=sequence_num,
-            enclosure_num=enclosure_num,
-        )
-        conteiner.append(additional_message)
-    # sequence_num = 0    
-    # if len(sended_mess_objs) > 1:
-    #     for mess_obj in sended_mess_objs[1: ]:
-    #         enclosure_num = 0
-    #         if not isinstance(mess_obj, list):
-    #             _add_additional_message(mess_obj, objs_for_db,
-    #                                     sequence_num, enclosure_num)
-    #         else:
-    #             for sub_mess in mess_obj:
-    #                 _add_additional_message(sub_mess, objs_for_db,
-    #                                         sequence_num, enclosure_num)
-    #                 enclosure_num += 1
-    #         sequence_num += 1
     for block in adv_f_send[1:]:
         for params in block.get_for_db():
             additional_message = dbm.AdditionalMessages(
@@ -268,7 +87,6 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
                 **params,
             )
             objs_for_db.append(additional_message)
-
 
     advert = dbm.Adverts(
         external_id=proces.adv_blank_id,
@@ -288,11 +106,6 @@ def make_title_mess(items: dict, tg_id: int, template: str = MESS_TEMPLATES['adv
 
 def make_title_f_blank(proces_obj, template: str = MESS_TEMPLATES['adv_line']):
     items = {key:proces_obj.adv_blank[key]['text'] for key in proces_obj.title_mess_content}
-    # params = {'blank_line_name': 0,
-    #         'sequence_num': 0,
-    #         'enclosure_num': 0}
-    # title_mess = make_title_mess(items=items, tg_id=None)
-    # title.update(params)
     title_mess = ''
     for key, value in items.items():
         text_elem = '-' if not value else str(value)
@@ -304,7 +117,6 @@ def make_title_f_blank(proces_obj, template: str = MESS_TEMPLATES['adv_line']):
             group_num=0,
             group_type='text',
             ignore_title=True)
-    # return title_mess
 
 
 def prepare_changed(original_blank: dict, redacted_blank: dict,
@@ -389,15 +201,6 @@ def prepare_changed(original_blank: dict, redacted_blank: dict,
 
 def is_sending_as_new(original_blank: dict, redacted_blank: dict,
                  title_mess_content: list) -> bool:
- 
-    # def _get_additional_item_keys(blank: dict,
-    #                               title_mess_content: list)-> list:
-    #     additional_item_keys = []
-    #     for key in blank.keys():
-    #         if key in title_mess_content:
-    #             continue
-    #         additional_item_keys.append(key)
-    #     return additional_item_keys
     
     def _count_by_type(items: list) -> dict:
         by_type_counter = {}
@@ -409,11 +212,6 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
                 continue
             by_type_counter.setdefault(item_type,0)
             by_type_counter[item_type] += 1
-            # amount = by_type_counter.get(item_type)
-            # if amount:
-            #     by_type_counter[item_type] += 1
-            # else:
-            #     by_type_counter[item_type] = 1
         return by_type_counter
     
     def _is_excess(original: dict, redacted: dict) -> bool:
@@ -424,13 +222,6 @@ def is_sending_as_new(original_blank: dict, redacted_blank: dict,
             if red_value > orig_value:
                 return True
 
-    # orig_item_keys = _get_additional_item_keys(original_blank,
-    #                                            title_mess_content)
-    # red_item_keys = _get_additional_item_keys(redacted_blank,
-    #                                            title_mess_content)
-    # if len(red_item_keys) > len(orig_item_keys):
-    #     return True
-    
     for key, value in original_blank.items():
         if isinstance(value,(list, tuple)):
             orig_types = _count_by_type(value)
@@ -500,14 +291,14 @@ def delete_messages(bot: TeleBot, chat_id: int, session: Session,
         except Exception:
             successful = False
 
-    session.query(dbm.AdditionalMessages).filter(
+    deleted = session.query(dbm.AdditionalMessages).filter(
         dbm.AdditionalMessages.tg_mess_id.in_(deleted_ids)
         ).delete(synchronize_session='evaluate')
+    session.commit()
     return successful
 
 
 class SendingBlock():
-    # title_variants: dict = GROUP_TYPES
     blank_titles: dict = ABW
     universal_title = 'В том числе'
     media_classes = {
@@ -531,25 +322,7 @@ class SendingBlock():
         self.ignore_title = ignore_title
         self.formated = []
         self.media_extra_args = {}
-    
-    # def find_set_title(self, titles: dict=None) -> dict:
-
-    #     def _make_title(text: str) -> dict:
-    #         if not text:
-    #             text = self.title_variants['universal']
-    #         return {
-    #             'text': text,
-    #             'content_type': 'text',
-    #             'sequence_num': self.group_num,
-    #             'enclosure_num': 0,
-    #             }
-
-    #     if not titles or not titles.get(self.group_num):
-    #         text = self.title_variants.get(self.group_type)
-    #         title = _make_title(text)
-    #     else:        
-    #         title = titles.get(self.group_num)
-    #     self.title = title
+  
 
     def _make_title(self) -> dict:
         text = self.blank_titles.get(self.blank_line_name)
@@ -577,9 +350,6 @@ class SendingBlock():
                 continue
             sequence_num = item.get('sequence_num')
             enclosure_num = item.get('enclosure_num')
-            # if enclosure_num == 0:
-            #     self.title = item
-            #     continue
             if not sequence_num:
                 item['sequence_num'] = self.group_num
             if not enclosure_num:
@@ -656,20 +426,14 @@ class SendingBlock():
         converted = []
         class_type = self.media_classes[self.group_type]
         for item in self.items:
-            # item = item.copy()
-            # caption = item.pop('caption', None)
             caption = item.get('caption')
             body = item[self.group_type]
             instance = class_type(media=body, caption=caption)
             self.media_extra_args[instance] = item
-            # item[self.group_type] = instance
-            # converted.append(item)
             converted.append(instance)
         return converted
 
     def get_formated(self) -> list:
-        # if not self.title:
-        #     self.find_set_title()
         out = []
         if not self.ignore_title:
             out = [self.title,]
@@ -685,31 +449,7 @@ class SendingBlock():
 
     def get_for_sending(self):
         return self.get_formated()
-        # sending = []
 
-        # def _cleaner(item: dict):
-        #     poped_keys = ['blank_line_name', 'sequence_num', 'enclosure_num']
-        #     cleaned = item.copy()
-        #     for key in poped_keys:
-        #         cleaned.pop(key, None)
-        #     return cleaned
-        
-        # def _clean_group(items: List[dict]):
-        #     cleaned = []
-        #     for item in items:
-        #         cleaned.append(_cleaner(item))
-        #     return cleaned
-
-        # for item in self.formated:
-        #     if item['content_type'] == 'text':
-        #         sending.append(_cleaner(item))
-        #     else:
-        #         sending.append(item)
-                # cleaned = _clean_group(item['media'])
-                # sending.append(
-                #     {'content_type': 'media',
-                #     'media': cleaned})
-        # return sending
 
     def get_for_db(self) -> List[dict]:
         out = []
@@ -782,7 +522,7 @@ def content_sorter(items: List[dict], blank_line_name:str) -> list:
     return result
 
 
-def adv_former2(obj):
+def adv_former(obj):
     adv_blank: dict = obj.adv_blank
     title_mess = make_title_f_blank(obj)
     obj.adv_f_send = [title_mess]
@@ -804,7 +544,7 @@ def adv_former2(obj):
     return obj.adv_f_send
 
 
-def reconst_blank2(title_message:TitleMessages, blank_template: dict,
+def reconst_blank(title_message:TitleMessages, blank_template: dict,
                    title_mess_content: list) -> Union[dict, list]:
     
     title_mess_id = title_message.tg_mess_id

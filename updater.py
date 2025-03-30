@@ -6,16 +6,18 @@ from utils import review_elem
 
 
 # -------------------------------------
-def gen_mess_for_group(obj) -> list:
+def gen_mess_for_group(obj) -> dict:
     keyboard = elements_butt(obj)
     if not keyboard:
-        return []
-    return [{'text': 'Выберите, что нужно заменить:',
-             'reply_markup': keyboard}]
-# ELEM_GROUP_MESS = [
-#     {'text': 'Выберите, что нужно заменить:',
-#      'kbd_maker': elements_butt}]
-UNO_ELEM_MESS = [review_elem, {'text': ttg.text_uno_elem}]
+        return {}
+    # return [{'text': 'Выберите, что нужно заменить:',
+    #          'kbd_maker': keyboard}]
+    return {'text': 'Выберите, что нужно заменить:',
+            'reply_markup': keyboard,
+            'content_type': 'text' }
+
+UNO_ELEM_MESS = [review_elem,
+                 {'text': ttg.text_uno_elem, 'content_type': 'text'}]
 # -------------------------------------
 
 
@@ -45,11 +47,6 @@ class Ref:
     @property
     def raw(self):
         return self.__node[self.__key]
-    
-    # @property
-    # def vtype(self):
-    #     record = self.__node[self.__key]
-    #     return record['content_type']
     
     def update_raw(self, data: dict):
         record = self.__node[self.__key]
@@ -89,8 +86,8 @@ class Ref:
 
 
 class DataRow:
-    def __init__(self, value, vtype, name, parent=None, id=None,
-                 validator=None, message=None, required=None):
+    def __init__(self, value, vtype, name, parent:int=None, id:int=None,
+                 validator=None, message:list=None, required:bool=None):
         self.value = value
         self.vtype = vtype
         self.parent = parent
@@ -169,8 +166,8 @@ class DataTable:
         if ids:
             for elem_id in ids:
                 self._null_value(elem_id)
-        if row.parent:
-            row.value = None
+        # if row.parent:
+        #     row.value = None
 
     def null(self, id:int):
         self._null_value(id)
@@ -197,9 +194,7 @@ class DataTable:
             validator = validators.get(key) if validators else None
             message = messages.get(key) if messages else None
             if message and isinstance(value, list):
-                # message.extend(ELEM_GROUP_MESS)
                 message.append(gen_mess_for_group)
-            # elif message and isinstance(value, (int, str)):
             elif message and isinstance(value, dict):
                 message.extend(UNO_ELEM_MESS)
             row = DataRow(value=rec, vtype=None, name=key, message=message,
@@ -258,10 +253,8 @@ class DataTable:
                 type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
-                # row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
-                #               message=ELEM_GROUP_MESS)
                 row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
-                              message=gen_mess_for_group)
+                              message=[gen_mess_for_group])
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)

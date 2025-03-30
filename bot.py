@@ -110,8 +110,6 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
             continue
 
         content_type = mess_data.get('content_type') or 'text'
-        # tg_mess_id = mess_data.pop('tg_mess_id', None)
-        ## добавить очистку от незнакомых методу полей: poped_keys = ['blank_line_name', 'sequence_num', 'enclosure_num']
         if content_type not in SEND_METHODS.keys():
             content_type = 'text'
         sender = SEND_METHODS[content_type]
@@ -122,15 +120,12 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
                 sender_data.update({key:value})
         sent_mess = sender(user_id, message_thread_id=message_thread_id, **sender_data)
         sent_messages.append(sent_mess)
-        # mess_data.update({'content_type': content_type, 'tg_mess_id': tg_mess_id})
 
     return sent_messages
 
 
 def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
                 message_thread_id: int = my_thread_id):
-    # for item in pre_mess:
-    #     item.update({'message_thread_id': message_thread_id})
     return send_multymessage(chat_id, pre_mess, message_thread_id)
 
 
@@ -300,19 +295,16 @@ def apply_update(message):
 
     if cmd == redaction:
         if user.adv_proces:
-            # user.stop_upd()
             context = user.adv_proces.repeat_last_step()
         else:
-            # redacted_blank = user.upd_proces.clear_deleted()
             redacted_blank = user.upd_proces.adv_blank
             original_blank = user.upd_proces.original_blank
             title_mess_content = user.upd_proces.title_mess_content
             if is_sending_as_new(original_blank, redacted_blank,
                         title_mess_content):
-                mess = adv_former(user.upd_proces, insert_group_name=False)
+                mess = adv_former(user.upd_proces)
                 sended_mess_objs = adv_sender(mess)
                 context = user.upd_proces.make_registration()
-                # user.upd_proces.adv_blank = user.upd_proces.wrapp_blank()
                 adv_to_db(user, SESSION, sended_mess_objs)
                 #TODO создать таблицу для связей нового и старого adv_blank_id
             else:
@@ -473,10 +465,8 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
 
     blank_template = RegistrProces().adv_blank.copy()
     title_mess_content = RegistrProces().title_mess_content
-    # adv_blank, tg_mess_ids, db_mess_objs = reconst_blank(title_message, blank_template)
     adv_blank, db_mess_objs = reconst_blank(title_message, blank_template,
                                             title_mess_content)
-    # user.start_update(adv_blank, tg_mess_ids, data, db_mess_objs)
     user.start_update(adv_blank=adv_blank, adv_blank_id=data,
                       db_mess_objs=db_mess_objs)
     user.cmd_stack_pop()
@@ -538,8 +528,6 @@ if __name__ == '__main__':
     develop_id = os.getenv('DEVELOP_ID')
     t1 = threading.Thread(target=err_informer, args=[develop_id])
     t1.start()
-
-    # db_user = get_or_create(SESSION, dbm.User, {'tg_id': 13333, 'name': "mey"})
 
     while True:
         try:
