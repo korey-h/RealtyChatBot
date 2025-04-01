@@ -23,7 +23,7 @@ import buttons as sb
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
 from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
-                   make_media, prepare_changed, reconst_blank, update_messages,
+                   prepare_changed, reconst_blank, update_messages,
                    SendingBlock)
 
 if os.path.exists('.env'):
@@ -126,9 +126,23 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
 
 def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
                 message_thread_id: int = my_thread_id):
+    serial = dbm.AdvertSerialNums()
+    SESSION.add(serial)
+    SESSION.commit()
+    title_title ={
+            'text': f'************\nОбъявление № {serial.id}',
+            'content_type': 'text',
+            'blank_line_name': 'title',
+            'sequence_num': 0,
+            'enclosure_num': 0,
+            'serial_obj': serial,
+            } 
+    for mess in pre_mess:
+        if isinstance(mess, SendingBlock): # TODO упростить; титульный блок должен быть всегда первым
+            if mess.group_num == 0:
+                mess.title = title_title
+                break
     return send_multymessage(chat_id, pre_mess, message_thread_id)
-
-
 
 
 def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
@@ -139,91 +153,6 @@ def is_buttons_alowwed(func_name: str, button_data: dict, user: User):
         bot.send_message(user.id, text=text)
         return False
     return True
-
-
-@bot.message_handler(commands=['try_edit'])
-#тестовая функция для проверки возможностей по редактированию сообщений
-def try_edit(message, **kwargs):
-    media_class = {
-        'audio': InputMediaAudio,
-        'document': InputMediaDocument,
-        'photo':  InputMediaPhoto,
-        'video': InputMediaVideo
-    }
-    self_name = 'try_edit'
-    user = get_user(message)
-    if user.is_stack_empty() or user.cmd_stack['cmd_name'] != self_name:
-        user.cmd_stack = (self_name, try_edit)
-        bot.send_message(user.id, text='высылай медиа!')
-        return
-    if len(user.storage) < 4:
-        data = RegistrProces()._pars_mess_obj(message)
-        user.storage.append(data)
-    else:
-        sent_messages = send_multymessage(user.id, user.storage)
-        time.sleep(2)
-
-        for i in range(len(user.storage)):
-            mess_sent = sent_messages[len(user.storage) - i - 1]
-            con_type = user.storage[i]['content_type']
-            media_id = user.storage[i][con_type]
-            media = media_class[con_type](media=media_id)
-            if mess_sent.message_id != sent_messages[i].message_id:
-                bot.edit_message_media(media, user.id, mess_sent.message_id)
-            time.sleep(1)
-        time.sleep(3)
-        mess_for_del = sent_messages[0]
-        bot.delete_message(user.id, mess_for_del.message_id)
-        time.sleep(3)
-        # mess_for_cor = sent_messages[1]
-        # text_correct = 'новый текст'
-        # bot.edit_message_text(text_correct, user.id, mess_for_cor.message_id)
-    # text_orig = 'исходное сообщение'
-    # text_correct = 'новый текст'
-
-    # mess_sended = bot.send_message(user.id, text_orig)
-    # bot.send_message(user.id, text_orig)
-    # time.sleep(60)
-    # bot.edit_message_text(text_correct, user.id, mess_sended.message_id)
-
-@bot.message_handler(commands=['try_fake'])
-#тестовая функция для проверки возможностей по редактированию сообщений
-def try_fake(message, **kwargs):
-    media_class = {
-        'audio': InputMediaAudio,
-        'document': InputMediaDocument,
-        'photo':  InputMediaPhoto,
-        'video': InputMediaVideo
-    }
-    self_name = 'try_fake'
-    user = get_user(message)
-    if user.is_stack_empty() or user.cmd_stack['cmd_name'] != self_name:
-        user.cmd_stack = (self_name, try_fake)
-        bot.send_message(user.id, text='высылай фото!')
-        return
-    if len(user.storage) < 1:
-        data = RegistrProces()._pars_mess_obj(message)
-        user.storage.append(data)
-        bot.send_message(user.id, text='высылай документ!')
-    elif len(user.storage) < 2:
-        data = RegistrProces()._pars_mess_obj(message)
-        user.storage.append(data)
-    else:
-        sent_messages = send_multymessage(user.id, user.storage)
-        time.sleep(2)
-        # text = 'Фотка тю-тю!'
-        
-        photo_id = sent_messages[0].message_id
-        doc_id = sent_messages[1].message_id
-
-        media_photo = media_class['photo'](media=photo_id)
-        media_doc = media_class['document'](media=doc_id)
-        bot.edit_message_media(media_photo, user.id, doc_id )
-        time.sleep(2)
-        bot.edit_message_media(media_doc, user.id, photo_id )
-
-
-
 
 
 @bot.message_handler(commands=['start'])
@@ -528,6 +457,11 @@ if __name__ == '__main__':
     develop_id = os.getenv('DEVELOP_ID')
     t1 = threading.Thread(target=err_informer, args=[develop_id])
     t1.start()
+
+    # serial = dbm.AdvertSerialNums()
+    # SESSION.add(serial)
+    # SESSION.commit()
+    # print(f'\nОбъявление номер {serial.id}')
 
     while True:
         try:

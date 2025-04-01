@@ -67,14 +67,21 @@ def adv_to_db(user, session: Session, sended_mess_objs: list):
         to_title_mess.update({key: item['text']})
     
     current_datetime = dt.now()
-    title_mess_tg_id = adv_f_send[0].items[0]['tg_mess_id']
+    title_block = adv_f_send[0]
+    title_title = title_block.title
+    serial_obj = title_title['serial_obj']
+    serial_obj.tg_mess_id = title_title['tg_mess_id']
+    title_mess_tg_id = title_block.items[0]['tg_mess_id']
+
     title_message = dbm.TitleMessages(
         tg_mess_id = title_mess_tg_id,
         time=current_datetime,
         mess_type='text',
         user_id = db_user.id,
+        serial_info_id = serial_obj.id,
         **to_title_mess
     )
+    session.add(serial_obj)
     session.add(title_message)
     session.commit()
     objs_for_db = []
@@ -116,7 +123,7 @@ def make_title_f_blank(proces_obj, template: str = MESS_TEMPLATES['adv_line']):
             blank_line_name='title',
             group_num=0,
             group_type='text',
-            ignore_title=True)
+            ignore_title=False)
 
 
 def prepare_changed(original_blank: dict, redacted_blank: dict,
@@ -443,7 +450,7 @@ class SendingBlock():
             divided_into_parts = self._devide_media(conv_to_media)
             out.extend(divided_into_parts)
         else:
-            out = self.items
+            out.extend(self.items)
         self.formated = out
         return out
 

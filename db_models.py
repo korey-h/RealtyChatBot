@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, MetaData
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -11,6 +11,17 @@ from sqlalchemy.orm import (
 
 class Base(DeclarativeBase):
     pass
+
+naming_convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(column_0_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+Base.metadata = MetaData(naming_convention=naming_convention)
+
 
 class User(Base):
     __tablename__ = 'tg_users'
@@ -52,6 +63,8 @@ class TitleMessages(Base):
     user: Mapped[Optional["User"]] = relationship(back_populates='messages')
     additional_messages: Mapped[List['AdditionalMessages']] = relationship(
         back_populates='title_message', cascade='all, delete-orphan')
+    serial_info_id: Mapped[Optional[int]] = mapped_column(ForeignKey('serial_nums.id'))
+    serial_info: Mapped[Optional["AdvertSerialNums"]] = relationship(back_populates='title_message')
     
     def update_from_tg_format(self, message: dict):
         tg_db_translater = {
@@ -119,3 +132,13 @@ class Adverts(Base):
     title_message_id: Mapped[int] = mapped_column(
         ForeignKey('title_messages.id')
         )
+
+class AdvertSerialNums(Base):
+    __tablename__ = 'serial_nums'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tg_mess_id: Mapped[str] = mapped_column(
+                                String(), nullable=True, default='0')
+    title_message: Mapped["TitleMessages"] = relationship(
+        back_populates='serial_info'
+        )
+

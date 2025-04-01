@@ -10,8 +10,6 @@ def gen_mess_for_group(obj) -> dict:
     keyboard = elements_butt(obj)
     if not keyboard:
         return {}
-    # return [{'text': 'Выберите, что нужно заменить:',
-    #          'kbd_maker': keyboard}]
     return {'text': 'Выберите, что нужно заменить:',
             'reply_markup': keyboard,
             'content_type': 'text' }
@@ -166,8 +164,6 @@ class DataTable:
         if ids:
             for elem_id in ids:
                 self._null_value(elem_id)
-        # if row.parent:
-        #     row.value = None
 
     def null(self, id:int):
         self._null_value(id)
