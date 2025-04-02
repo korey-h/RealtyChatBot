@@ -590,3 +590,11 @@ def reconst_blank(title_message:TitleMessages, blank_template: dict,
         blank_template[key] = value
     
     return blank_template, db_mess_objs
+
+
+def make_adv_title(num: int) -> str:
+    # для использования совместно с параметром
+    # отправки сообщения parse_mode='html'
+    base_text = 'Объявление № '
+    lenth = len(str(num) + base_text) + 1
+    return f'<b>{"*" * lenth}\n<u>{base_text}{str(num)}</u></b>'

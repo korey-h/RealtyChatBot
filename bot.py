@@ -23,7 +23,7 @@ import buttons as sb
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
 from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
-                   prepare_changed, reconst_blank, update_messages,
+                   make_adv_title, prepare_changed, reconst_blank, update_messages,
                    SendingBlock)
 
 if os.path.exists('.env'):
@@ -130,12 +130,13 @@ def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
     SESSION.add(serial)
     SESSION.commit()
     title_title ={
-            'text': f'************\nОбъявление № {serial.id}',
+            'text': make_adv_title(serial.id),
             'content_type': 'text',
             'blank_line_name': 'title',
             'sequence_num': 0,
             'enclosure_num': 0,
             'serial_obj': serial,
+            'parse_mode': 'html'
             } 
     for mess in pre_mess:
         if isinstance(mess, SendingBlock): # TODO упростить; титульный блок должен быть всегда первым
