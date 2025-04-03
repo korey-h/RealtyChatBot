@@ -52,7 +52,7 @@ class Ref:
             print('Операция доступна только для значений типа Dictionary.')
             return
         if not (set(data.keys()) <= set(record.keys())):
-            print('Недопустимо. Предложенные для обновления типы параметров отсутствуют обновляемой записи.')
+            print('Недопустимо. Предложенные для обновления типы параметров отсутствуют в обновляемой записи.')
             return
         for key, value in data.items():
             record[key] = value
@@ -85,7 +85,8 @@ class Ref:
 
 class DataRow:
     def __init__(self, value, vtype, name, parent:int=None, id:int=None,
-                 validator=None, message:list=None, required:bool=None):
+                 validator=None, message:list=None, required:bool=None,
+                 step_exp_types=[]):
         self.value = value
         self.vtype = vtype
         self.parent = parent
@@ -95,6 +96,7 @@ class DataRow:
         self.validator = validator
         self.message = message
         self.required = required
+        self.step_exp_types = step_exp_types
 
     @property
     def title(self, full=BUTTONS, short=ST_TITLE):
@@ -112,13 +114,14 @@ class DataRow:
 
 class DataTable:
     def __init__(self, blank=None, validators:dict=None,
-                 messages:dict=None):
+                 messages:dict=None, expected_types:dict={}):
         self.__store = {}
         self.__relations = {}
         self.__id = 0
         self.__complex_fields = {}
+        self.expected_types = expected_types
         if blank:
-            self._make_from_blank(blank, validators, messages)
+            self._make_from_blank(blank, validators, messages, expected_types)
 
     def add(self, row: DataRow) -> int:
         self.__id += 1
@@ -184,17 +187,18 @@ class DataTable:
         return self.__store
     
     def _make_from_blank(self, blank:dict, validators:dict=None,
-                         messages:dict=None):
+                         messages:dict=None, expected_types:dict={}):
         for key, value in blank.items():  
             rec = Ref(blank, key)
             validator = validators.get(key) if validators else None
+            step_exp_types = expected_types.get(key, {})
             message = messages.get(key) if messages else None
             if message and isinstance(value, list):
                 message.append(gen_mess_for_group)
             elif message and isinstance(value, dict):
                 message.extend(UNO_ELEM_MESS)
             row = DataRow(value=rec, vtype=None, name=key, message=message,
-                          validator=validator)
+                          validator=validator, step_exp_types=step_exp_types)
             row_id = self.add(row)
             if isinstance(value, list):
                 self.__complex_fields.setdefault(row_id, value)
@@ -222,7 +226,7 @@ class DataTable:
             group.append(rec)
         return out
 
-    def __group_to_table(self, parent:int, group:list):
+    def __group_to_table(self, parent:int, group:list, step_exp_types=[]):
         ids = []
         gtype = self.get(parent).vtype
         existents = self.relations.get(parent)
@@ -234,7 +238,7 @@ class DataTable:
         for elem in group[point::]:
             num += 1
             row = DataRow(value=elem, vtype=gtype, parent=parent, name=num,
-                          message=UNO_ELEM_MESS)
+                          message=UNO_ELEM_MESS, step_exp_types=step_exp_types)
             elem_id = self.add(row)
             ids.append(elem_id)
         return ids
@@ -244,19 +248,22 @@ class DataTable:
             groups = self.pars_by_type(seq)
             type_ids = {}
             rel = self.relations.get(row_id, [])
+            step_exp_types = self.expected_types.get(row_id)
             for group_id in rel:
                 gtype = self.get(group_id).vtype
                 type_ids.update({gtype: group_id})
 
             for gtype, group in groups.items():
                 row = DataRow(value=[], vtype=gtype, parent=row_id, name=gtype,
-                              message=[gen_mess_for_group])
+                              message=[gen_mess_for_group],
+                              step_exp_types=step_exp_types)
                 if type_ids.get(gtype):
                     parent = type_ids[gtype]
                     self.rep(parent, row)
                 else:
                     parent = self.add(row)
-                row.value = self.__group_to_table(parent=parent, group=group)
+                row.value = self.__group_to_table(parent=parent, group=group,
+                                                  step_exp_types=step_exp_types)
 
 
 if  __name__ == '__main__':

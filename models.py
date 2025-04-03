@@ -1,5 +1,6 @@
 import base64
 import datetime as dt
+import json
 import hashlib
 
 from copy import copy, deepcopy
@@ -54,6 +55,17 @@ class RegistrProces:
         9: {'keyword': KEYWORDS['send_btn'], 'source': 'button'}
     }
 
+    _step_exp_types = {
+            1: ('text',),
+            2: ('text',),
+            3: ('text',),
+            4: ('text',),
+            5: ('text',),
+            6: ('text',),
+            7: ('text',),
+            8: ('text', 'audio', 'photo', 'document', 'video', 'location'),
+        }
+    
     def __init__(self) -> None:
         self.step = 0
         self.race = None
@@ -82,6 +94,11 @@ class RegistrProces:
         self.adv_blank_id = None
         self._prior_messages = deepcopy(self._base_messages)
    
+    def step_exp_types(self, step: int=None):
+        if step is None:
+            return self._step_exp_types.get(self.step)
+        return self._step_exp_types.get(step)
+
     def _get_step_info(self, step: int) -> dict:
         return self._step_actions.get(step)
 
@@ -140,10 +157,13 @@ class RegistrProces:
                 
     
         def location(mess_obj):
-            return {
-                'latitude': mess_obj.latitude,
-                'longitude': mess_obj.longitude,
-                'live_period': mess_obj.live_period}
+            parsed = {
+                'latitude': mess_obj.location.latitude,
+                'longitude': mess_obj.location.longitude,
+                'live_period': mess_obj.location.live_period}
+            serialised = json.dumps(parsed)
+            parsed['location'] = serialised
+            return parsed
 
         def contact(mess_obj):
             return {
@@ -335,12 +355,31 @@ class RegUpdateProces(RegistrProces):
         messages = self._all_prior_mess()
         self.adv_blank = copy(blank) # TODO проверить необходимость deepcopy
         self.original_blank = {}
-        self.butt_table = DataTable(self.adv_blank, validators, messages)
+        self.butt_table = DataTable(self.adv_blank, validators, messages,
+                                    self._exp_types_f_names())
         self._prior_messages[0] = self.welcome_mess
         self.del_is_conf = True
         self.tg_mess_ids = tg_mess_ids
         self.db_mess_objs = {}
     
+    def step_exp_types(self, step: int=None):
+        if step is None:
+            row = self.butt_table.get(self.step)
+        else:
+            row = self.butt_table.get(step)
+        if not row:
+            return []
+        return row.step_exp_types
+ 
+    def _exp_types_f_names(self):
+        new = {}
+        for step, types in self._step_exp_types.items():
+            name = self._step_actions[step]['name']
+            if not name:
+                continue
+            new[name] = types
+        return new
+
     def mess_wrapper(self, value) -> List[dict]:
         pre_mess = []
         keyboard = None

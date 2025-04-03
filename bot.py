@@ -22,6 +22,7 @@ import buttons as sb
 
 from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
 from models import User, RegistrProces
+from text_generators import text_required_mess_type
 from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
                    make_adv_title, prepare_changed, reconst_blank, update_messages,
                    SendingBlock)
@@ -278,6 +279,14 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
             text=MESSAGES['adv_always_on']
             )
 
+    received_mess_type = message.content_type
+    expected_mess_type = user.adv_proces.step_exp_types()
+    if expected_mess_type and received_mess_type not in expected_mess_type:
+        return bot.send_message(
+            user.id,
+            text=text_required_mess_type(expected_mess_type)
+            )
+
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
             return
@@ -327,6 +336,14 @@ def redaction(message, user: User = None, data=None, *args, **kwargs):
     
     elif called_from == 'find_mess_for_renew':
         user.set_cmd_stack((self_name, redaction))
+
+    received_mess_type = message.content_type
+    expected_mess_type = user.upd_proces.step_exp_types()
+    if expected_mess_type and received_mess_type not in expected_mess_type:
+        return bot.send_message(
+            user.id,
+            text=text_required_mess_type(expected_mess_type)
+            )
 
     if isinstance(data, dict):
         if not is_buttons_alowwed(self_name, data, user):
@@ -417,7 +434,7 @@ def text_router(message):
     try_exec_stack(message, user, data)
 
 
-@bot.message_handler(content_types=['photo', 'audio', 'document'])
+@bot.message_handler(content_types=['photo', 'audio', 'document', 'location'])
 def media_router(message):
     user = get_user(message)
     try_exec_stack(message, user, 'photo')

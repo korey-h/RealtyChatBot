@@ -159,3 +159,18 @@ GROUP_TYPES = {
     'text': 'Текстовое описание',
     'universal': 'В том числе',
 }
+
+EXP_TYPES_NAME = {
+        'audio': 'аудиофайл',
+        'photo': 'фотографию',
+        'voice': 'голосовое сообщение',
+        'video': 'видео',
+        'document': 'документ',
+        'text': 'текст',
+        'location': 'геопозицию',
+        'contact': 'контакт',
+        'sticker': 'стикер',       
+    }
+
+ALLOWED_TYPES = ('text', 'audio', 'photo', 'document', 
+                 'video', 'location')

@@ -3,7 +3,7 @@ import db_models as dbm
 from copy import deepcopy
 from datetime import datetime as dt
 
-from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE, GROUP_TYPES,
+from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE, ALLOWED_TYPES,
                      MESS_TEMPLATES, MAX_IN_MEDIA)
 
 from typing import List, Union
@@ -127,7 +127,7 @@ def make_title_f_blank(proces_obj, template: str = MESS_TEMPLATES['adv_line']):
 
 
 def prepare_changed(original_blank: dict, redacted_blank: dict,
-                 title_mess_content: list, tg_mess_ids: list = []) -> dict:
+                 title_mess_content: list) -> dict:
 
     title_mess_items = {}
     deleted = {}
@@ -315,11 +315,11 @@ class SendingBlock():
         'video': InputMediaVideo
     }
     max_media = MAX_IN_MEDIA
-    allowed_content = ('audio', 'voice', 'video', 'document', 'text')
 
     def __init__(self, items: List[dict],blank_line_name:str, group_num:int, 
                  group_type: str, title: dict={}, ignore_title: bool=False,
-                 max_len_text = 250):
+                 max_len_text = 250, allowed_content = ALLOWED_TYPES):
+        self.allowed_content = allowed_content
         self.blank_line_name = blank_line_name
         self.group_num = group_num
         self.group_type = group_type
@@ -499,13 +499,7 @@ class SendingBlock():
 
 
 def content_sorter(items: List[dict], blank_line_name:str) -> list:
-    by_types = {
-        'audio': [],
-        'video': [],
-        'document': [],
-        'photo': [],
-        'text': []
-    }    
+    by_types = {key:[] for key in ALLOWED_TYPES}    
     result = []
     for item in items:
         content_type = item['content_type']
