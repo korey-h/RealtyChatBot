@@ -160,7 +160,7 @@ class RegistrProces:
             parsed = {
                 'latitude': mess_obj.location.latitude,
                 'longitude': mess_obj.location.longitude,
-                'live_period': mess_obj.location.live_period}
+                'live_period': 2147483647} # для возможности редактирования
             serialised = json.dumps(parsed)
             parsed['location'] = serialised
             return parsed

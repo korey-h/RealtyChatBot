@@ -1,4 +1,5 @@
 import db_models as dbm
+import json
 
 from copy import deepcopy
 from datetime import datetime as dt
@@ -271,13 +272,17 @@ def update_messages(bot: TeleBot, chat_id: int, session: Session,
             if mess['content_type'] == 'text':
                 bot.edit_message_text(mess['text'], chat_id,
                                       mess['tg_mess_id'])         
-            else:
+            elif mess['content_type'] in ('audio', 'document', 'photo', 'video'):
                 media = make_media(mess)
                 if not media:
                     successful = False
                 else:
                     bot.edit_message_media(media, chat_id,
                                            mess['tg_mess_id'])
+            elif mess['content_type'] == 'location':
+                    bot.edit_message_live_location(
+                        latitude=mess['latitude'], longitude=mess['longitude'],
+                        chat_id=chat_id, message_id=mess['tg_mess_id'])
         except Exception:
             successful = False
 
@@ -405,11 +410,11 @@ class SendingBlock():
             part_len += len(text)
             if part_len > self.max_len_text:
                 parts.append({'content_type': 'text', 'text': text_part})
-                text_part = text + '\n'
+                text_part = text + ' ' + '\n'
                 part_len = len(text)
             else:
-                text_part += text
-        parts.append({'content_type': 'text', 'text': text_part[:-1]})
+                text_part += text + ' ' + '\n'
+        parts.append({'content_type': 'text', 'text': text_part})
         return parts
     
     def _divide_single_text(self, texts: List[dict]) -> List[dict]:
@@ -547,7 +552,7 @@ def adv_former(obj):
 
 def reconst_blank(title_message:TitleMessages, blank_template: dict,
                    title_mess_content: list) -> Union[dict, list]:
-    
+    jsoned_mess_types = ('location', )
     title_mess_id = title_message.tg_mess_id
     db_mess_objs = {title_mess_id:title_message, }
     for key in title_mess_content:
@@ -566,7 +571,7 @@ def reconst_blank(title_message:TitleMessages, blank_template: dict,
         blank_line_name = mess.blank_line_name
         if not container.get(blank_line_name):
             container[blank_line_name] = []
-        container[blank_line_name].append({
+        reconst_message = {
             'content_type': mess.mess_type,
             'caption': mess.caption,
             mess.mess_type: mess.content_text,
@@ -575,7 +580,12 @@ def reconst_blank(title_message:TitleMessages, blank_template: dict,
             'blank_line_name': blank_line_name, 
             'tg_mess_id': mess.tg_mess_id,
             'db_id': mess.id
-        })
+        }
+        if mess.mess_type in jsoned_mess_types:
+            params = json.loads(mess.content_text)
+            reconst_message.update(params)
+
+        container[blank_line_name].append(reconst_message)
     for key, value in container.items():
         value.sort(
             key=lambda mess:

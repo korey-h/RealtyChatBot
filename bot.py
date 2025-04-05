@@ -476,11 +476,6 @@ if __name__ == '__main__':
     t1 = threading.Thread(target=err_informer, args=[develop_id])
     t1.start()
 
-    # serial = dbm.AdvertSerialNums()
-    # SESSION.add(serial)
-    # SESSION.commit()
-    # print(f'\nОбъявление номер {serial.id}')
-
     while True:
         try:
             bot.polling(non_stop=True)
