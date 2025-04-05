@@ -117,6 +117,8 @@ def elements_butt(obj, *args, **kwargs):
             try:
                 if el.value.raw.get('enclosure_num') == 0:
                     continue
+                if el.value.val is None:
+                    continue
             except:
                 pass
         button = InlineKeyboardButton(

@@ -9,7 +9,7 @@ from utils import review_elem
 def gen_mess_for_group(obj) -> dict:
     keyboard = elements_butt(obj)
     if not keyboard:
-        return {}
+        return {'text': 'В этом разделе ничего нет.', 'content_type': 'text'}
     return {'text': 'Выберите, что нужно заменить:',
             'reply_markup': keyboard,
             'content_type': 'text' }

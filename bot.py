@@ -14,13 +14,11 @@ from logging.handlers import RotatingFileHandler
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from telebot import TeleBot
-from telebot.types import (InputMediaAudio, InputMediaDocument, 
-                            InputMediaPhoto, InputMediaVideo)
 from typing import List
 
 import buttons as sb
 
-from config import ALLOWED_BUTTONS, BUTTONS, EMOJI, MESSAGES
+from config import ALLOWED_BUTTONS, BUTTONS,COMMANDS_NAME_RU, EMOJI, MESSAGES
 from models import User, RegistrProces
 from text_generators import text_required_mess_type
 from utils import (adv_former, adv_to_db, delete_messages, is_sending_as_new,
@@ -125,8 +123,8 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
     return sent_messages
 
 
-def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
-                message_thread_id: int = my_thread_id):
+def adv_sender(pre_mess: List[dict], proces_obj: RegistrProces,
+               chat_id: int = my_chat_id, message_thread_id: int = my_thread_id):
     serial = dbm.AdvertSerialNums()
     SESSION.add(serial)
     SESSION.commit()
@@ -138,7 +136,8 @@ def adv_sender(pre_mess: List[dict], chat_id: int = my_chat_id,
             'enclosure_num': 0,
             'serial_obj': serial,
             'parse_mode': 'html'
-            } 
+            }
+    proces_obj.adv_serial_num = serial.id
     for mess in pre_mess:
         if isinstance(mess, SendingBlock): # TODO упростить; титульный блок должен быть всегда первым
             if mess.group_num == 0:
@@ -185,9 +184,12 @@ def cancel_this(message):
             context = user.adv_proces.repeat_last_step()
             send_multymessage(user.id, context)
         else:
+            cmd_name = up_stack['cmd_name']
+            translated = COMMANDS_NAME_RU.get(cmd_name)
+            cmd_name = translated if translated else cmd_name
             bot.send_message(
                 user.id,
-                MESSAGES['mess_cancel_this'].format(up_stack['cmd_name']),
+                MESSAGES['mess_cancel_this'].format(cmd_name),
                 reply_markup=sb.make_welcome_kbd())
         user.stop_upd()
         return
@@ -234,7 +236,7 @@ def apply_update(message):
             if is_sending_as_new(original_blank, redacted_blank,
                         title_mess_content):
                 mess = adv_former(user.upd_proces)
-                sended_mess_objs = adv_sender(mess)
+                sended_mess_objs = adv_sender(mess, user.upd_proces)
                 context = user.upd_proces.make_registration()
                 adv_to_db(user, SESSION, sended_mess_objs)
                 #TODO создать таблицу для связей нового и старого adv_blank_id
@@ -305,7 +307,7 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
         return
     if not user.adv_proces.is_active:
         mess = user.adv_proces.adv_f_send
-        sended_mess_objs = adv_sender(mess)
+        sended_mess_objs = adv_sender(mess, user.adv_proces)
         adv_to_db(user, SESSION, sended_mess_objs)
         user.stop_advert()
         user.cmd_stack_pop()

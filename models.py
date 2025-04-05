@@ -92,6 +92,7 @@ class RegistrProces:
         ]
         self.adv_f_send = '-'
         self.adv_blank_id = None
+        self.adv_serial_num = None
         self._prior_messages = deepcopy(self._base_messages)
    
     def step_exp_types(self, step: int=None):
@@ -227,7 +228,7 @@ class RegistrProces:
             act = self._get_step_info(self.step)
             if act and act['name']:
                 entry = act['name']
-                if mess_obj: # TODO добавить возм. выбора  data, даже если есть mess_obj
+                if mess_obj:
                     data = self._pars_mess_obj(mess_obj)
                 if isinstance(self.adv_blank[entry], list):
                     self.adv_blank[entry].append(data)
@@ -256,7 +257,10 @@ class RegistrProces:
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
         self.is_active = False
-        mess = ADV_MESSAGE['mess_adv_send'].format(self.adv_blank_id)
+
+        # TODO вынести формирование финишного сообщения в отдельную функцию, чтобы
+        # отправлять его после размещения объявления в целевом чате. Сейчас оно выводится до этого
+        mess = ADV_MESSAGE['mess_adv_send'].format(self.adv_serial_num, self.adv_blank_id)
         return self.mess_wrapper([
             [mess, sb.make_welcome_kbd()],
             [ADV_MESSAGE['mess_adv_send_p2'], sb.renew_btn(self.adv_blank_id)],
@@ -501,7 +505,7 @@ class RegUpdateProces(RegistrProces):
         row = self.butt_table.get(self.step)
         if row.required:
             return self.mess_wrapper(ADV_MESSAGE['non_delete'])
-        elif isinstance(row.value, list):
+        elif isinstance(row.value, list) or isinstance(row.value.val, list):
             if self.del_is_conf:
                 self.del_is_conf = False
                 return self.mess_wrapper(ADV_MESSAGE['del_confirm'])
