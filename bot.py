@@ -307,8 +307,17 @@ def registration(message, user: User = None, data=None, *args, **kwargs):
         return
     if not user.adv_proces.is_active:
         mess = user.adv_proces.adv_f_send
-        sended_mess_objs = adv_sender(mess, user.adv_proces)
+        try:
+            sended_mess_objs = adv_sender(mess, user.adv_proces)
+        except:
+            user.adv_proces.is_active = True
+            user.adv_proces.repeat_last_step()
+            return bot.send_message(
+                user.id,
+                text=MESSAGES['fault_finish_sending']
+                )
         adv_to_db(user, SESSION, sended_mess_objs)
+        context = user.adv_proces.finish_message
         user.stop_advert()
         user.cmd_stack_pop()
     send_multymessage(user.id, context)

@@ -243,7 +243,7 @@ class RegistrProces:
             return
         elif not self._fix_list and self.step < self._finish_step:
             self.step += 1
-        else:
+        elif self._fix_list:
             self.step = self._fix_list.pop()
         pre_mess.extend(self.mess_wrapper(self.step))
         return pre_mess
@@ -257,9 +257,10 @@ class RegistrProces:
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
         self.is_active = False
-
-        # TODO вынести формирование финишного сообщения в отдельную функцию, чтобы
-        # отправлять его после размещения объявления в целевом чате. Сейчас оно выводится до этого
+        return {'text': 'finish'}
+    
+    @property
+    def finish_message(self):
         mess = ADV_MESSAGE['mess_adv_send'].format(self.adv_serial_num, self.adv_blank_id)
         return self.mess_wrapper([
             [mess, sb.make_welcome_kbd()],
