@@ -64,7 +64,7 @@ class TitleMessages(Base):
     additional_messages: Mapped[List['AdditionalMessages']] = relationship(
         back_populates='title_message', cascade='all, delete-orphan')
     serial_info_id: Mapped[Optional[int]] = mapped_column(ForeignKey('serial_nums.id'))
-    serial_info: Mapped[Optional["AdvertSerialNums"]] = relationship(back_populates='title_message')
+    serial_info: Mapped[Optional["AdvertSerialNums"]] = relationship(back_populates='title_messages')
     
     def update_from_tg_format(self, message: dict):
         tg_db_translater = {
@@ -138,7 +138,7 @@ class AdvertSerialNums(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_mess_id: Mapped[str] = mapped_column(
                                 String(), nullable=True, default='0')
-    title_message: Mapped["TitleMessages"] = relationship(
+    title_messages: Mapped[List["TitleMessages"]] = relationship(
         back_populates='serial_info'
         )
 

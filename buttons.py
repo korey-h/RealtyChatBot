@@ -19,7 +19,8 @@ def make_welcome_kbd(*args, **kwargs):
     row_width = 2
     buttons_name = name_to_cmd(
         [BUTTONS['make_advert'],
-         BUTTONS['help'], ]
+         BUTTONS['help'],
+         BUTTONS['renew'], ]
         )
     return make_base_kbd(buttons_name, row_width)
 

@@ -27,3 +27,9 @@ def text_required_mess_type(types: str):
         content += EXP_TYPES_NAME.get(key, '') + ', '
     content = content[:-2]
     return base + content + '.'
+
+def text_welcome_upd_mess(proces_obj) -> str:
+    serial_num = proces_obj.adv_serial_num
+    if not serial_num:
+        return ADV_MESSAGE['mess_welcome_upd']
+    return f"{ADV_MESSAGE['mess_welcome_upd']} №{serial_num}"

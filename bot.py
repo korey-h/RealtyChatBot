@@ -125,11 +125,16 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
 
 def adv_sender(pre_mess: List[dict], proces_obj: RegistrProces,
                chat_id: int = my_chat_id, message_thread_id: int = my_thread_id):
-    serial = dbm.AdvertSerialNums()
-    SESSION.add(serial)
-    SESSION.commit()
+    if not proces_obj.adv_serial_num:
+        serial = dbm.AdvertSerialNums()
+        SESSION.add(serial)
+        SESSION.commit()
+        proces_obj.adv_serial_num = serial.id
+    else:
+        serial = SESSION.query(dbm.AdvertSerialNums).filter(
+                    dbm.AdvertSerialNums.id==proces_obj.adv_serial_num).first()
     title_title ={
-            'text': make_adv_title(serial.id),
+            'text': make_adv_title(proces_obj.adv_serial_num),
             'content_type': 'text',
             'blank_line_name': 'title',
             'sequence_num': 0,
@@ -137,7 +142,7 @@ def adv_sender(pre_mess: List[dict], proces_obj: RegistrProces,
             'serial_obj': serial,
             'parse_mode': 'html'
             }
-    proces_obj.adv_serial_num = serial.id
+    
     for mess in pre_mess:
         if isinstance(mess, SendingBlock): # TODO упростить; титульный блок должен быть всегда первым
             if mess.group_num == 0:
@@ -221,7 +226,10 @@ def cancel_all(message):
 @bot.message_handler(commands=[BUTTONS['apply']])
 def apply_update(message):
     user = get_user(message)
-    cmd = user.get_cmd_stack()['cmd'] # TODO если процессы не запущены команда /Применить вызывает ошибку
+    up_stack = user.get_cmd_stack()
+    if not up_stack:
+        return
+    cmd = up_stack['cmd']
     context = [{'text': MESSAGES['renew_finished']}]
     del_success = True
     upd_success = True
@@ -237,7 +245,8 @@ def apply_update(message):
                         title_mess_content):
                 mess = adv_former(user.upd_proces)
                 sended_mess_objs = adv_sender(mess, user.upd_proces)
-                context = user.upd_proces.make_registration()
+                user.upd_proces.make_registration()
+                context = user.upd_proces.finish_message
                 adv_to_db(user, SESSION, sended_mess_objs)
                 #TODO создать таблицу для связей нового и старого adv_blank_id
             else:
@@ -427,6 +436,7 @@ def find_mess_for_renew(message, user: User = None, data=None, *args, **kwargs):
                                             title_mess_content)
     user.start_update(adv_blank=adv_blank, adv_blank_id=data,
                       db_mess_objs=db_mess_objs)
+    user.upd_proces.adv_serial_num = title_message.serial_info.id
     user.cmd_stack_pop()
     redaction(message, user, **{'from': 'find_mess_for_renew'})
 

@@ -257,7 +257,7 @@ class RegistrProces:
     def make_registration(self) -> dict:
         self.adv_blank_id = self._make_id_for_regblank()
         self.is_active = False
-        return {'text': 'finish'}
+        return [{'text': 'finish'}]
     
     @property
     def finish_message(self):
@@ -349,7 +349,7 @@ class RegistrProces:
 class RegUpdateProces(RegistrProces):
 
     welcome_mess = [
-        {'text': ADV_MESSAGE['mess_welcome_upd'],
+        {'text': ttg.text_welcome_upd_mess,
          'kbd_maker': sb.welcome_upd_butt},
         {'text': ADV_MESSAGE['about_kbd'],
          'kbd_maker': sb.make_upd_kbd}]
@@ -438,6 +438,9 @@ class RegUpdateProces(RegistrProces):
                 pre_mess.extend(self.mess_wrapper(rec.message))
             else:
                 pre_mess.extend(self.mess_wrapper(ADV_MESSAGE['rec_deleted']))
+        elif self.step == 0:
+            warning = {'text': ADV_MESSAGE['mess_select_button']}
+            pre_mess.append(warning)
         else:
             row = self.butt_table.get(self.step)
             if row is None or row.value is None:
