@@ -20,8 +20,10 @@ def to_integer(obj, data: str) -> dict:
 
 def age_check(obj, data: str):
     message = None
-    to_integer(obj, data)
-    year = int(data)
+    res = to_integer(obj, data)
+    if res['error']:
+        return res
+    year = res['data']
     year_now = dt.datetime.now().year
     if year > year_now:
         message = ADV_MESSAGE['wrong_year']
