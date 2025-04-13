@@ -8,6 +8,7 @@ from typing import List
 
 import buttons as sb
 import text_generators as ttg
+import validators as vlds
 
 from config import ADV_MESSAGE, KEYWORDS, KEYWORDS_MESS
 from updater import DataRow, DataTable, Ref
@@ -66,6 +67,17 @@ class RegistrProces:
             8: ('text', 'audio', 'photo', 'document', 'video', 'location'),
         }
     
+    validators = {
+            1: vlds.to_integer,
+            2: vlds.to_integer,
+            3: vlds.clipper,
+            4: vlds.clipper,
+            5: vlds.age_check,
+            6: vlds.clipper,
+            7: vlds.to_integer,
+            9: vlds.check_keyword,
+        }
+    
     def __init__(self) -> None:
         self.step = 0
         self.race = None
@@ -109,17 +121,7 @@ class RegistrProces:
         }
 
     def _get_validator(self, step: int):
-        validators = {
-            1: self._to_integer,
-            2: self._to_integer,
-            3: self._clipper,
-            4: self._clipper,
-            5: self._age_check,
-            6: self._clipper,
-            7: self._to_integer,
-            9: self._check_keyword,
-        }
-        return validators.get(step)
+        return self.validators.get(step)
 
     def _make_id_for_regblank(self):
         data = '.'.join([str(val) for val in self.adv_blank.values()])
@@ -220,7 +222,7 @@ class RegistrProces:
         if data is not None:
             validator = self._get_validator(self.step)
             if validator:
-                res = validator(data)
+                res = validator(self, data)
                 if res['error']:
                     return self.mess_wrapper(res['error'])
                 data = res['data']
@@ -314,29 +316,7 @@ class RegistrProces:
             return [value]
         return [{'text': text, 'reply_markup': keyboard}]
 
-    def _clipper(self, data: str) -> dict:
-        data = data.strip()
-        return {'data': data, 'error': None}
-
-    def _to_integer(self, data: str) -> dict:
-        message = None
-        try:
-            data = int(data)
-        except Exception:
-            data = None
-            message = ADV_MESSAGE['not_integer']
-        return {'data': data, 'error': message}
-
-    def _age_check(self, data: str):
-        message = None
-        self._to_integer(data)
-        year = int(data)
-        year_now = dt.datetime.now().year
-        if year > year_now:
-            message = ADV_MESSAGE['wrong_year']
-        return {'data': data, 'error': message}
-    
-    def _check_keyword(self, data: str):
+  
         message = None
         keyword = self._step_keywords.get(self.step)
         if keyword:
@@ -451,7 +431,7 @@ class RegUpdateProces(RegistrProces):
                 if row.value.raw['content_type'] == 'text':
                     validator = row.validator
                     if validator:
-                        res = validator(data)
+                        res = validator(self, data)
                         if res['error']:
                             return self.mess_wrapper(res['error'])
                         else:
