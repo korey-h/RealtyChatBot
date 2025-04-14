@@ -1,11 +1,11 @@
 import base64
-import datetime as dt
 import json
 import hashlib
 
 from copy import copy, deepcopy
 from typing import List
 
+import blank_config as bc
 import buttons as sb
 import text_generators as ttg
 import validators as vlds
@@ -20,92 +20,47 @@ class RegistrProces:
         {'text': ADV_MESSAGE['mess_welcome_create'],
          'kbd_maker': sb.cancel_this_kbd}]
     _stop_text = 'to registration'
-    _base_messages = {
-        0: welcome_mess,
-        1: [{'text': ADV_MESSAGE['mess_ask_space']}],
-        2: [{'text': ADV_MESSAGE['mess_ask_flour']}],
-        3: [{'text': ADV_MESSAGE['mess_ask_material']}],
-        4: [{'text': ADV_MESSAGE['mess_ask_address']}],
-        5: [{'text': ADV_MESSAGE['mess_ask_year']}],
-        6: [{'text': ADV_MESSAGE['mess_ask_district']}],
-        7: [{'text': ADV_MESSAGE['mess_ask_price']}],
-        8: [{'text': ttg.text_add_foto,
-            'kbd_maker': sb.farther_keyboard}],
-        9: [{'text': ADV_MESSAGE['mess_confirm_adv'],
-            'kbd_maker': sb.cancel_this_kbd},
-            {'text': adv_former, 'kbd_maker': sb.send_btn}],
-        10: [{'text': _stop_text}],
-
-    }
-
-    _step_actions = {
-        0: {'name': None, 'required': True},
-        1: {'name': 'space', 'required': True},
-        2: {'name': 'flour', 'required': True},
-        3: {'name': 'material', 'required': True},
-        4: {'name': 'address', 'required': True},
-        5: {'name': 'year', 'required': True},
-        6: {'name': 'district', 'required': False},
-        7: {'name': 'price', 'required': True},
-        8: {'name': 'photo', 'required': False},
-        9: {'name': None, 'required': True},
-        10: {'name': None, 'required': True},
-    }
 
     _step_keywords = {
         9: {'keyword': KEYWORDS['send_btn'], 'source': 'button'}
     }
-
-    _step_exp_types = {
-            1: ('text',),
-            2: ('text',),
-            3: ('text',),
-            4: ('text',),
-            5: ('text',),
-            6: ('text',),
-            7: ('text',),
-            8: ('text', 'audio', 'photo', 'document', 'video', 'location'),
-        }
-    
-    validators = {
-            1: vlds.to_integer,
-            2: vlds.to_integer,
-            3: vlds.clipper,
-            4: vlds.clipper,
-            5: vlds.age_check,
-            6: vlds.clipper,
-            7: vlds.to_integer,
-            9: vlds.check_keyword,
-        }
     
     def __init__(self) -> None:
         self.step = 0
         self.race = None
         self.id = None
-        self._finish_step = len(self._step_actions) - 1
+        self._finish_step = len(bc.step_actions) + 2
         self.send_step = self._finish_step - 1
         self.is_active = True
         self.errors = {}
         self._fix_list = [] # сохраняет номер шага и текст ошибки
 
-        self.adv_blank = {
-            'space': None,
-            'flour': None,
-            'material': '',
-            'address': '',
-            'year': None,
-            'district': '',
-            'price': None,
-            'photo': [],
-        }
-        self.title_mess_content = [
-            'space', 'flour', 'material', 'address','year',
-            'district','price'
-        ]
+        self.adv_blank = bc.adv_blank
+        self.title_mess_content = bc.title_mess_content
         self.adv_f_send = '-'
         self.adv_blank_id = None
         self.adv_serial_num = None
+
+        self._step_actions = {0: {'name': None, 'required': True}, }
+        self._step_actions.update(bc.step_actions)
+        self._step_actions.update({
+            self.send_step: {'name': None, 'required': True},
+            self._finish_step: {'name': None, 'required': True},
+        })
+
+        self._base_messages = {
+            0: self.welcome_mess,
+            self.send_step: [{'text': ADV_MESSAGE['mess_confirm_adv'],
+                             'kbd_maker': sb.cancel_this_kbd},
+                             {'text': adv_former, 'kbd_maker': sb.send_btn}],
+            self._finish_step: [{'text': self._stop_text}],
+        }
+        self._base_messages.update(bc.step_messages)
         self._prior_messages = deepcopy(self._base_messages)
+    
+        self.validators = {self.send_step: vlds.check_keyword}
+        self.validators.update(bc.validators)
+        self._step_exp_types = bc.step_exp_types
    
     def step_exp_types(self, step: int=None):
         if step is None:
