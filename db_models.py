@@ -58,6 +58,7 @@ class TitleMessages(Base):
     year: Mapped[int]
     district: Mapped[str]
     price: Mapped[int]
+    contact: Mapped[str] = mapped_column(String(), nullable=True)
 
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey('tg_users.id'))
     user: Mapped[Optional["User"]] = relationship(back_populates='messages')

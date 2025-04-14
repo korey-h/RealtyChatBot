@@ -126,19 +126,6 @@ MESS_TEMPLATES = {
     'adv_line': '{}: {}\n'
 }
 
-ADV_BLANK_WORDS = {
-    'space': 'Площадь, кв.м (с учётом балконов)',
-    'flour': 'Этаж (этажность)',
-    'material': 'Материал дома',
-    'address': 'Адрес',
-    'year': 'Год постройки',
-    'district': 'Район',
-    'price': 'Цена, руб.',
-    'photo': 'Фотографии и прочее описание:',
-    'title': 'Объявление № __.'
-}
-
-
 ALLOWED_BUTTONS = {
     'advert_forming': ['send', 'pass', 'farther', 'redact'],
     'advert_update':  ['send', 'pass', 'farther', 'update'],
@@ -181,4 +168,17 @@ ALLOWED_TYPES = ('text', 'audio', 'photo', 'document',
 COMMANDS_NAME_RU = {
     'advert_update': 'Редактирование',
     'registration': 'Заполнение бланка'
+}
+
+ADV_BLANK_WORDS = {
+    'space': 'Площадь, кв.м (с учётом балконов)',
+    'flour': 'Этаж (этажность)',
+    'material': 'Материал дома',
+    'address': 'Адрес',
+    'year': 'Год постройки',
+    'district': 'Район',
+    'price': 'Цена, руб.',
+    'photo': 'Фотографии и прочее описание:',
+    'contact': 'Контакты: ',
+    'title': 'Объявление № __.'
 }
