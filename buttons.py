@@ -5,6 +5,7 @@ from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
 
 from config import BUTTONS, KEYWORDS
 
+
 def name_to_cmd(names):
     return ['/' + name for name in names]
 

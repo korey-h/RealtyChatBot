@@ -1,7 +1,6 @@
 import db_models as dbm
 import json
 
-from copy import deepcopy
 from datetime import datetime as dt
 
 from config import  (ADV_BLANK_WORDS as ABW, ADV_MESSAGE, ALLOWED_TYPES,
