@@ -103,7 +103,7 @@ def send_multymessage(user_id, pre_mess: List[dict], message_thread_id=None):
             enclusive_data = mess_data.get_for_sending()
             if not enclusive_data:
                 continue
-            sent_part = send_multymessage(user_id, enclusive_data)
+            sent_part = send_multymessage(user_id, enclusive_data, message_thread_id)
             mess_data.set_ids(sent_part)
             sent_messages.extend(sent_part)
             continue
