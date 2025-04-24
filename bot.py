@@ -30,7 +30,7 @@ if os.path.exists('.env'):
 else:
     print('файл .env с ключами доступа к боту, базе данны и т.п. не найден.')
 
-LET_VIEW_EXS = True
+LET_VIEW_EXS = False
 
 my_chat_id = os.getenv('CHAT_ID')
 my_thread_id = os.getenv('MESSAGE_THREAD_ID')
